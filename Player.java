@@ -53,45 +53,48 @@ public class Player implements pb.sim.Player {
             // add 5-50% of current velocity in magnitude
             System.out.println("Try: " + retry + " / " + retries_per_turn);
             double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
-            double v2 = v1 * (random.nextDouble() * 0.45 + 0.05);
-            System.out.println("  Speed: " + v1 + " +/- " + v2);
-            // apply push at -π/8 to π/8 of current angle
-            double d1 = Math.atan2(v.y, v.x);
-            double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
-            System.out.println("  Angle: " + d1 + " -> " + d2);
-            // compute energy
-            double E = 0.5 * asteroids[i].mass * v2 * v2;
-            // try to push asteroid
-            Asteroid a1 = null;
-            try {
-                a1 = Asteroid.push(asteroids[i], time, E, d2);
-            } catch (InvalidOrbitException e) {
-                System.out.println("  Invalid orbit: " + e.getMessage());
-                continue;
-            }
-            // avoid allocating a new Point object for every position
-            Point p1 = v, p2 = new Point();
-            // search for collision with other asteroids
-            for (int j = 0 ; j != asteroids.length ; ++j) {
-                if (i == j) continue;
-                Asteroid a2 = asteroids[j];
-                double r = a1.radius() + a2.radius();
-                // look 10 years in the future for collision
-                for (long ft = 0 ; ft != 3650 ; ++ft) {
-                    long t = time + ft;
-                    if (t >= time_limit) break;
-                    a1.orbit.positionAt(t - a1.epoch, p1);
-                    a2.orbit.positionAt(t - a2.epoch, p2);
-                    // if collision, return push to the simulator
-                    if (Point.distance(p1, p2) < r) {
-                        energy[i] = E;
-                        direction[i] = d2;
-                        // do not push again until collision happens
-                        time_of_push = t + 1;
-                        System.out.println("  Collision prediction !");
-                        System.out.println("  Year: " + (1 + t / 365));
-                        System.out.println("  Day: "  + (1 + t % 365));
-                        return;
+            double v2 = 0.0;
+            for(int aa = 1; aa < 10; aa++) {
+                v2 = v1 * (0.05 * aa);
+                System.out.println("  Speed: " + v1 + " +/- " + v2);
+                // apply push at -π/8 to π/8 of current angle
+                double d1 = Math.atan2(v.y, v.x);
+                double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
+                System.out.println("  Angle: " + d1 + " -> " + d2);
+                // compute energy
+                double E = 0.5 * asteroids[i].mass * v2 * v2;
+                // try to push asteroid
+                Asteroid a1 = null;
+                try {
+                    a1 = Asteroid.push(asteroids[i], time, E, d2);
+                } catch (InvalidOrbitException e) {
+                    System.out.println("  Invalid orbit: " + e.getMessage());
+                    continue;
+                }
+                // avoid allocating a new Point object for every position
+                Point p1 = v, p2 = new Point();
+                // search for collision with other asteroids
+                for (int j = 0; j != asteroids.length; ++j) {
+                    if (i == j) continue;
+                    Asteroid a2 = asteroids[j];
+                    double r = a1.radius() + a2.radius();
+                    // look 10 years in the future for collision
+                    for (long ft = 0; ft != 3650; ++ft) {
+                        long t = time + ft;
+                        if (t >= time_limit) break;
+                        a1.orbit.positionAt(t - a1.epoch, p1);
+                        a2.orbit.positionAt(t - a2.epoch, p2);
+                        // if collision, return push to the simulator
+                        if (Point.distance(p1, p2) < r) {
+                            energy[i] = E;
+                            direction[i] = d2;
+                            // do not push again until collision happens
+                            time_of_push = t + 1;
+                            System.out.println("  Collision prediction !");
+                            System.out.println("  Year: " + (1 + t / 365));
+                            System.out.println("  Day: " + (1 + t % 365));
+                            return;
+                        }
                     }
                 }
             }
