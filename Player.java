@@ -5,6 +5,7 @@ import pb.sim.Orbit;
 import pb.sim.Asteroid;
 import pb.sim.InvalidOrbitException;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Player implements pb.sim.Player {
@@ -15,6 +16,9 @@ public class Player implements pb.sim.Player {
     // current time, time limit
     private long time = -1;
     private long time_limit = -1;
+
+
+    private Point origin = new Point(0,0);
 
     // time until next push
     private long time_of_push = 0;
@@ -36,12 +40,15 @@ public class Player implements pb.sim.Player {
                      double[] energy, double[] direction)
     {
         // if not yet time to push do nothing
+//        System.out.println(time + Arrays.toString(asteroids));
         if (++time <= time_of_push) return;
         System.out.println("Year: " + (1 + time / 365));
         System.out.println("Day: "  + (1 + time % 365));
         for (int retry = 1 ; retry <= retries_per_turn ; ++retry) {
             // pick a random asteroid and get its velocity
-            int i = random.nextInt(asteroids.length);
+            int i = 0;
+            i = getFarthestAsteroid(asteroids);
+//            i = getClosestPairAsteroid(asteroids);
             Point v = asteroids[i].orbit.velocityAt(time);
             // add 5-50% of current velocity in magnitude
             System.out.println("Try: " + retry + " / " + retries_per_turn);
@@ -91,5 +98,49 @@ public class Player implements pb.sim.Player {
             System.out.println("  No collision ...");
         }
         time_of_push = time + turns_per_retry;
+    }
+
+    private int getClosestPairAsteroid(Asteroid[] asteroids) {
+        int index1 = 0;
+        int index2 = 0;
+        double minDistance = Integer.MAX_VALUE;
+        Point p1 = new Point();
+        Point p2 = new Point();
+        for(int aa = 0; aa < asteroids.length; aa++) {
+            asteroids[aa].orbit.positionAt(time, p1);
+            for(int bb = 0; bb < asteroids.length; bb++) {
+                if(aa == bb) {
+                    continue;
+                }
+                asteroids[bb].orbit.positionAt(time, p2);
+                double distance = Point.distance(p1, p2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    index1 = aa;
+                    index2 = aa;
+                }
+            }
+        }
+        asteroids[index1].orbit.positionAt(time, p1);
+        asteroids[index2].orbit.positionAt(time, p1);
+        if(Point.distance(p1, origin) > Point.distance(p2, origin)) {
+            return index1;
+        }
+        return index2;
+    }
+
+    public int getFarthestAsteroid(Asteroid[] asteroids) {
+        int index = 0;
+        double maxDistance = 0;
+        Point point = new Point();
+        for(int aa = 0; aa < asteroids.length; aa++) {
+            asteroids[aa].orbit.positionAt(time, point);
+            double distance = Point.distance(point, origin);
+            if(distance > maxDistance) {
+                maxDistance = distance;
+                index = aa;
+            }
+        }
+        return index;
     }
 }
