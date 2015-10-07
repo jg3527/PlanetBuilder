@@ -137,7 +137,8 @@ public class Player implements pb.sim.Player {
         double maxDistance = 0;
         Point point = new Point();
         for(int aa = 0; aa < asteroids.length; aa++) {
-            asteroids[aa].orbit.positionAt(time, point);
+            Asteroid a1 = asteroids[aa];
+            a1.orbit.positionAt(time - a1.epoch, point);
             double distance = Point.distance(point, origin);
             if(distance > maxDistance) {
                 maxDistance = distance;

@@ -46,7 +46,7 @@ class Simulator {
 				if (args[a].equals("-g") || args[a].equals("--group")) {
 					if (++a == args.length)
 						throw new IllegalArgumentException("Missing group name");
-					group = args[++a];
+					group = args[a];
 				} else if (args[a].equals("-s") || args[a].equals("--state")) {
 					if (++a == args.length)
 						throw new IllegalArgumentException("Missing state file");
