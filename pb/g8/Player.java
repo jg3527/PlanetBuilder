@@ -110,12 +110,14 @@ public class Player implements pb.sim.Player {
         Point p1 = new Point();
         Point p2 = new Point();
         for(int aa = 0; aa < asteroids.length; aa++) {
-            asteroids[aa].orbit.positionAt(time, p1);
+            Asteroid a1 = asteroids[aa];
+            a1.orbit.positionAt(time - a1.epoch, p1);
             for(int bb = 0; bb < asteroids.length; bb++) {
                 if(aa == bb) {
                     continue;
                 }
-                asteroids[bb].orbit.positionAt(time, p2);
+                Asteroid a2 = asteroids[bb];
+                a2.orbit.positionAt(time - a2.epoch, p2);
                 double distance = Point.distance(p1, p2);
                 if (distance < minDistance) {
                     minDistance = distance;
