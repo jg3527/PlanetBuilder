@@ -39,7 +39,7 @@ public class Orbit implements Iterable <Point> {
 	// generate elliptic orbit from current position and velocity
 	public Orbit(Point r, Point v)
 	{
-		// find the eccentricity vector
+		// compute the eccentricity e using r and v
 		double r2 = r.x * r.x + r.y * r.y;
 		double r1 = Math.sqrt(r2);
 		double v2 = v.x * v.x + v.y * v.y;
@@ -49,22 +49,29 @@ public class Orbit implements Iterable <Point> {
 		double e_y = (f * r.y - rv * v.y) / GM;
 		double e2 = e_x * e_x + e_y * e_y;
 		double e = Math.sqrt(e2);
-		if (e >= 1) throw new InvalidOrbitException("Hyperbolic orbit");
-		// compute the major radius from r and υ
+		if (e == 1.0) throw new InvalidOrbitException("Parabolic orbit");
+		if (e > 1.0) throw new InvalidOrbitException("Hyperbolic orbit");
+		// compute the major radius using r and υ
 		a = GM / (2.0 * GM / r1 - v2);
 		// compute the minor radius from a and e
-		b = a * Math.sqrt(1 - e2);
-		// find the initial true anomaly θ
-		double cos_theta = (e_x * r.x + e_y * r.y) / (e * r1);
-		double theta = acos(cos_theta);
-		if (rv < 0.0) theta = -theta;
-		// set the rotation using θ
-		A = Math.atan2(r.y, r.x) - theta;
-		// find the initial eccentric anomaly
-		double Eo = acos((e + cos_theta) / (1.0 + e * cos_theta));
-		if (rv < 0.0) Eo = -Eo;
-		// set the initial mean anomaly
-		Mo = Eo - e * Math.sin(Eo);
+		b = a * Math.sqrt(1.0 - e2);
+		if (a == b) {
+			// circular orbit case
+			A = Double.NaN;
+			Mo = Math.atan2(r.y, r.x);
+		} else {
+			// compute the initial true anomaly θ
+			double cos_theta = (e_x * r.x + e_y * r.y) / (e * r1);
+			double theta = acos(cos_theta);
+			if (rv < 0.0) theta = -theta;
+			// compute the ellipse rotation using θ and r
+			A = Math.atan2(r.y, r.x) - theta;
+			// compute the initial eccentric anomaly Eo using θ and e
+			double Eo = acos((e + cos_theta) / (1.0 + e * cos_theta));
+			if (rv < 0.0) Eo = -Eo;
+			// compute the initial mean anomaly Mo using Eo and e
+			Mo = Eo - e * Math.sin(Eo);
+		}
 	}
 
 	// return the turn time
@@ -83,16 +90,18 @@ public class Orbit implements Iterable <Point> {
 	// return the center of the orbit
 	public void center(Point c)
 	{
-		// resolve circular case
+		// circular orbit case
 		if (a == b) {
 			c.x = c.y = 0.0;
 			return;
 		}
-		// generic ellipse case
+		// compute the eccentricity
 		double b_a = b / a;
-		double e = Math.sqrt(1 - b_a * b_a);
+		double e = Math.sqrt(1.0 - b_a * b_a);
+		// distance and direction from center
 		double len = a * e;
 		double dir = A + Math.PI;
+		// translate coordinates
 		c.x = len * Math.cos(dir);
 		c.y = len * Math.sin(dir);
 	}
@@ -100,12 +109,10 @@ public class Orbit implements Iterable <Point> {
 	// find the position at time t
 	public void positionAt(long t, Point r)
 	{
-		// compute the period and the time modulo
-		long T_dt = period();
-		t %= T_dt;
 		// find the mean anomaly
-		double M = Mo + 2.0 * Math.PI * t / T_dt;
-		// resolve circular case
+		long T = period();
+		double M = Mo + 2.0 * Math.PI * (t % T) / T;
+		// circular orbit case
 		if (a == b) {
 			r.x = a * Math.cos(M);
 			r.y = a * Math.sin(M);
@@ -146,7 +153,7 @@ public class Orbit implements Iterable <Point> {
 		positionAt(t, r);
 		// compute the eccentricity
 		double b_a = b / a;
-		double e = Math.sqrt(1 - b_a * b_a);
+		double e = Math.sqrt(1.0 - b_a * b_a);
 		// compute the angle between the foci using the law of cosines
 		double r1 = Math.sqrt(r.x * r.x + r.y * r.y);
 		double r_a = r1 / a;
@@ -190,16 +197,16 @@ public class Orbit implements Iterable <Point> {
 		return new Iterator <Point> () {
 
 			private long t = -1;
+			private long T = period();
 
 			public boolean hasNext()
 			{
-				return t + 1 != period();
+				return t + 1 != T;
 			}
 
 			public Point next()
 			{
-				if (t + 1 == period())
-					return null;
+				if (t + 1 == T) return null;
 				Point r = new Point();
 				positionAt(++t, r);
 				return r;
@@ -210,7 +217,7 @@ public class Orbit implements Iterable <Point> {
 	// compute arc cosine and include some error bound
 	private static double acos(double cos)
 	{
-		if (Math.abs(cos) - 1.0 > 1.0e-9)
+		if (Math.abs(cos) > 1.0 + 1.0e-9)
 			throw new NumberFormatException("Invalid cosine");
 		if (cos > +1.0) cos = +1.0;
 		if (cos < -1.0) cos = -1.0;
