@@ -87,6 +87,9 @@ public class Player implements pb.sim.Player {
                         // look 10 years in the future for collision
                         boolean willCollide = willCollide(a1, a2, 3650);
                         boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
+                        if(willCollide != willCollideOrigin){
+                            debug("Wrong !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                        }
                     }
                     System.out.println("  No collision ...");
                 } else {
@@ -136,7 +139,7 @@ public class Player implements pb.sim.Player {
         }
         return false;
     }
-    
+
     private int getClosestPairAsteroid(Asteroid[] asteroids) {
         int index1 = 0;
         int index2 = 0;
