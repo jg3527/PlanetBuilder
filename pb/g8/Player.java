@@ -8,11 +8,12 @@ import pb.sim.Asteroid;
 import pb.sim.InvalidOrbitException;
 import pb.sim.Orbit;
 import pb.sim.Point;
+import sun.security.util.DisabledAlgorithmConstraints;
 
 public class Player implements pb.sim.Player {
 
     //iteration number
-    int iteration =1;
+    int iteration = 1;
 
     // used to pick asteroid and velocity boost randomly
     private Random random = new Random();
@@ -73,7 +74,7 @@ public class Player implements pb.sim.Player {
                 try {
                     a1 = Asteroid.push(asteroids[i], time, E, d2);
                 } catch (InvalidOrbitException e) {
-                    System.out.println("  Invalid orbit: " + e.getMessage());
+                    //System.out.println("  Invalid orbit: " + e.getMessage());
                     continue;
                 }
                 // avoid allocating a new Point object for every position
@@ -85,13 +86,38 @@ public class Player implements pb.sim.Player {
                         Asteroid a2 = asteroids[j];
                         double r = a1.radius() + a2.radius();
                         // look 10 years in the future for collision
+                              
                         boolean willCollide = willCollide(a1, a2, 3650);
-                        boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
-                        if(willCollide != willCollideOrigin){
-                            debug("Wrong !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                        if(willCollide)
+                        	debug("trueeeeeeeeeeeeeee");
+                        for (long ft = 0; ft != 3650; ++ft) {
+                            long t = time + ft;
+                            if (t >= time_limit) break;
+                           
+                            a1.orbit.positionAt(t - a1.epoch, p1);
+                            a2.orbit.positionAt(t - a2.epoch, p2);
+                            // if collision, return push to the simulator
+
+                            if (Point.distance(p1, p2) < r) {
+                            	 debug("333333");
+                                energy[i] = E;
+                                direction[i] = d2;
+                                // do not push again until collision happens
+                                time_of_push = t + 1;
+                                System.out.println("  Collision prediction !");
+                                System.out.println("  Year: " + (1 + t / 365));
+                                System.out.println("  Day: " + (1 + t % 365));
+                                debug("current time: " + time);
+                                debug("origin time: " + t + " || ");
+                                iteration++;
+                                //System.out.println("will overlap: " + willOverlap(p1, a1.radius(), p2, a2.radius()));                         
+                                return ;
+                            }
+
                         }
+                        
                     }
-                    System.out.println("  No collision ...");
+                    //System.out.println("  No collision ...");
                 } else {
                     int j = getHeaviestAsteroid(asteroids);
                     // search for collision with other asteroids
@@ -99,12 +125,36 @@ public class Player implements pb.sim.Player {
                     double r = a1.radius() + a2.radius();
 
                     // look 10 years in the future for collision
+                    //boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
                     boolean willCollide = willCollide(a1, a2, 3650);
+                    if(willCollide)
+                    	debug("trueeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                    for (long ft = 0; ft != 3650; ++ft) {
+                        long t = time + ft;
+                        if (t >= time_limit) break;
+                       
+                        a1.orbit.positionAt(t - a1.epoch, p1);
+                        a2.orbit.positionAt(t - a2.epoch, p2);
+                        // if collision, return push to the simulator
 
-                    boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
-                    if(willCollide != willCollideOrigin){
-                        debug("Wrong !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                        if (Point.distance(p1, p2) < r) {
+                        	 debug("4444444444");
+                            energy[i] = E;
+                            direction[i] = d2;
+                            // do not push again until collision happens
+                            time_of_push = t + 1;
+                            System.out.println("  Collision prediction !");
+                            System.out.println("  Year: " + (1 + t / 365));
+                            System.out.println("  Day: " + (1 + t % 365));
+                            debug("current time: " + time);
+                            debug("origin time: " + t + " || ");
+                            iteration++;
+                            //System.out.println("will overlap: " + willOverlap(p1, a1.radius(), p2, a2.radius()));                         
+                            return ;
+                        }
+
                     }
+                   
                 }
             }
         }
@@ -118,11 +168,13 @@ public class Player implements pb.sim.Player {
         for (long ft = 0; ft != 3650; ++ft) {
             long t = time + ft;
             if (t >= time_limit) break;
+           
             a1.orbit.positionAt(t - a1.epoch, p1);
             a2.orbit.positionAt(t - a2.epoch, p2);
             // if collision, return push to the simulator
 
             if (Point.distance(p1, p2) < r) {
+            	 debug("333333");
                 energy[i] = E;
                 direction[i] = d2;
                 // do not push again until collision happens
@@ -134,6 +186,8 @@ public class Player implements pb.sim.Player {
                 debug("origin time: " + t + " || ");
                 //System.out.println("will overlap: " + willOverlap(p1, a1.radius(), p2, a2.radius()));                         
                 return true;
+            }else{
+            	//debug("r: " + r + " distance " + Point.distance(p1, p2));
             }
 
         }
@@ -187,12 +241,15 @@ public class Player implements pb.sim.Player {
         return index;
     }
 
-    public boolean willCollide(Asteroid a1, Asteroid a2, long timeInterval){
+    public boolean willCollide(Asteroid a11, Asteroid a22, long timeInterval){
+    	Asteroid a1, a2;
         //Make sure a1 is always the one has bigger period to short the loop time
-        if(a1.orbit.period() > a2.orbit.period()){
-            Asteroid tmp = a1;
-            a1 = a2;
-            a2 = tmp;
+        if(a11.orbit.period() > a22.orbit.period()){
+            a1 = a22;
+            a2 = a11;
+        }else{
+        	a1 = a11;
+        	a2 = a22;
         }
         long threshold = 10;
         ArrayList<Long> cts = getCollisonPoints(a1, a2);
