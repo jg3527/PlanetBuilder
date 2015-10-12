@@ -20,10 +20,7 @@ public class Player implements pb.sim.Player {
 
     // current time, time limit
     private long time = -1;
-<<<<<<< HEAD
-=======
     private long time_limit = -1;
->>>>>>> origin/master
 
     private Point origin = new Point(0,0);
 
@@ -72,14 +69,9 @@ public class Player implements pb.sim.Player {
             
             double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
             double v2 = 0.0;
-<<<<<<< HEAD
             for (double k=0; k< 1; k=k+0.001) 
             {
                 v2 = v1 * (k * 0.45 + 0.05); //Can't change this
-=======
-            for (double k=0; k< 1; k=k+0.001) {
-                v2 = v1 * (k * 0.45 + 0.05);
->>>>>>> origin/master
                 //System.out.println("  Speed: " + v1 + " +/- " + v2);
                 // apply push at -π/8 to π/8 of current angle            
                 double d1 = Math.atan2(v.y, v.x);
