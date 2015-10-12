@@ -20,6 +20,10 @@ public class Player implements pb.sim.Player {
 
     // current time, time limit
     private long time = -1;
+<<<<<<< HEAD
+=======
+    private long time_limit = -1;
+>>>>>>> origin/master
 
     private Point origin = new Point(0,0);
 
@@ -34,7 +38,7 @@ public class Player implements pb.sim.Player {
     public void init(Asteroid[] asteroids, long time_limit) {
         if (Orbit.dt() != 24 * 60 * 60)
             throw new IllegalStateException("Time quantum is not a day");
-        
+        this.time_limit = time_limit;
     }
 
     // try to push asteroid
@@ -42,6 +46,8 @@ public class Player implements pb.sim.Player {
     {
         // if not yet time to push do nothing
         if (++time <= time_of_push) return;
+        long time_left_per_asteroid = (time_limit - time)/asteroids.length;
+        time_left_per_asteroid = Math.max(time_left_per_asteroid, 3650);
         //System.out.println("Year: " + (1 + time / 365));
         //System.out.println("Day: "  + (1 + time % 365));
         List<Push> pushes = new ArrayList<Push>();
@@ -66,9 +72,14 @@ public class Player implements pb.sim.Player {
             
             double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
             double v2 = 0.0;
+<<<<<<< HEAD
             for (double k=0; k< 1; k=k+0.001) 
             {
                 v2 = v1 * (k * 0.45 + 0.05); //Can't change this
+=======
+            for (double k=0; k< 1; k=k+0.001) {
+                v2 = v1 * (k * 0.45 + 0.05);
+>>>>>>> origin/master
                 //System.out.println("  Speed: " + v1 + " +/- " + v2);
                 // apply push at -π/8 to π/8 of current angle            
                 double d1 = Math.atan2(v.y, v.x);
@@ -96,7 +107,7 @@ public class Player implements pb.sim.Player {
                         Asteroid a2 = asteroids[j];
                         // look 10 years in the future for collision
                               
-                        boolean willCollide = willCollide(a1, a2, 3650, p1, p2);
+                        boolean willCollide = willCollide(a1, a2, time_left_per_asteroid, p1, p2);
                         
                         if (willCollide) 
                         {
@@ -128,7 +139,7 @@ public class Player implements pb.sim.Player {
 
                     // look 10 years in the future for collision
                     //boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
-                    boolean willCollide = willCollide(a1, a2, 3650, p1, p2);
+                    boolean willCollide = willCollide(a1, a2, time_left_per_asteroid, p1, p2);
                   
                     if(willCollide){
                     	debug("COllide " + willCollide);
