@@ -2,6 +2,7 @@ package pb.g8;
 
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import pb.sim.Asteroid;
@@ -44,6 +45,7 @@ public class Player implements pb.sim.Player {
         if (++time <= time_of_push) return;
         //System.out.println("Year: " + (1 + time / 365));
         //System.out.println("Day: "  + (1 + time % 365));
+        List<Push> pushes = new ArrayList<Push>();
         for (int retry = 1 ; retry <= retries_per_turn ; ++retry) {
             // pick a random asteroid and get its velocity
             int i = 0;
@@ -90,8 +92,9 @@ public class Player implements pb.sim.Player {
                         
                         if (willCollide) {
                         	debug("COllide !!" + willCollide);
-                           energy[i] = E;
-                           direction[i] = d2;
+                           pushes.add(new Push(i, E, d2, time_of_push));
+//                           energy[i] = E;
+//                           direction[i] = d2;
                            // do not push again until collision happens
                            long t = time_of_push - 1;
                            System.out.println("  Collision prediction !");
@@ -99,9 +102,10 @@ public class Player implements pb.sim.Player {
                            System.out.println("  Day: " + (1 + t % 365));
                            debug("current time: " + time);
                            debug("origin time: " + t + " || ");
+                            //iteration number breaks here
                            iteration++;
                            //System.out.println("will overlap: " + willOverlap(p1, a1.radius(), p2, a2.radius()));                         
-                           return;
+                           break;
                        }
                         
                     }
@@ -124,6 +128,7 @@ public class Player implements pb.sim.Player {
                         System.out.println("  Collision prediction !");
                         System.out.println("  Year: " + (1 + t / 365));
                         System.out.println("  Day: " + (1 + t % 365));
+                        //iteration number breaks here
                         iteration++;
                         //System.out.println("will overlap: " + willOverlap(p1, a1.radius(), p2, a2.radius()));                         
                         return;
@@ -132,6 +137,18 @@ public class Player implements pb.sim.Player {
                     	
                 }
             }
+        }
+        if(pushes.size() > 0) {
+            Push min_push = pushes.get(0);
+            for(Push push: pushes) {
+                if(push.energy < min_push.energy) {
+                    min_push = push;
+                }
+            }
+            energy[min_push.asteroid_id] = min_push.energy;
+            direction[min_push.asteroid_id] = min_push.direction;
+            time_of_push = min_push.time_of_push;
+            return;
         }
         time_of_push = time + turns_per_retry;
     }
