@@ -61,12 +61,12 @@ public class Player implements pb.sim.Player {
             //System.out.println("Try: " + retry + " / " + retries_per_turn);
             double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
             double v2 = 0.0;
-            for (double k=0; k< 5; k=k+0.1) {
-                v2 = v1 * (k * 0.45 + 0.05);
+            for (double k=0; k< 1; k=k+0.1) {
+                v2 = v1 * (k * 0.15 + 0.05);
                 //System.out.println("  Speed: " + v1 + " +/- " + v2);
                 // apply push at -π/8 to π/8 of current angle
                 double d1 = Math.atan2(v.y, v.x);
-                double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
+                double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.1;
                 //System.out.println("  Angle: " + d1 + " -> " + d2);
                 // compute energy
                 double E = 0.5 * asteroids[i].mass * v2 * v2;
