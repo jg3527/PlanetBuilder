@@ -20,8 +20,6 @@ public class Player implements pb.sim.Player {
 
     // current time, time limit
     private long time = -1;
-   
-
 
     private Point origin = new Point(0,0);
 
@@ -40,7 +38,8 @@ public class Player implements pb.sim.Player {
     }
 
     // try to push asteroid
-    public void play(Asteroid[] asteroids, double[] energy, double[] direction) {
+    public void play(Asteroid[] asteroids, double[] energy, double[] direction) 
+    {
         // if not yet time to push do nothing
         if (++time <= time_of_push) return;
         //System.out.println("Year: " + (1 + time / 365));
@@ -49,22 +48,29 @@ public class Player implements pb.sim.Player {
         for (int retry = 1 ; retry <= retries_per_turn ; ++retry) {
             // pick a random asteroid and get its velocity
             int i = 0;
-            if(iteration == 1) {
+            if(iteration == 1) 
+            {
                 i = getFarthestAsteroid(asteroids);
-            } else {
+            }
+            else
+            {
                 i = getLightestAsteroid(asteroids);
             }
 
-//            i = getClosestPairAsteroid(asteroids);
+            // i = getClosestPairAsteroid(asteroids);
+            
             Point v = asteroids[i].orbit.velocityAt(time);
+            
             // add 5-50% of current velocity in magnitude
             //System.out.println("Try: " + retry + " / " + retries_per_turn);
+            
             double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
             double v2 = 0.0;
-            for (double k=0; k< 5; k=k+0.1) {
-                v2 = v1 * (k * 0.45 + 0.05);
+            for (double k=0; k< 1; k=k+0.001) 
+            {
+                v2 = v1 * (k * 0.45 + 0.05); //Can't change this
                 //System.out.println("  Speed: " + v1 + " +/- " + v2);
-                // apply push at -π/8 to π/8 of current angle
+                // apply push at -π/8 to π/8 of current angle            
                 double d1 = Math.atan2(v.y, v.x);
                 double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
                 //System.out.println("  Angle: " + d1 + " -> " + d2);
@@ -82,15 +88,18 @@ public class Player implements pb.sim.Player {
                 Point p1 = v, p2 = new Point();
             
                 // search for collision with other asteroids
-                if (iteration == 1) {
-                    for (int j = 0; j != asteroids.length; ++j) {
+                if (iteration == 1) 
+                {
+                    for (int j = 0; j != asteroids.length; ++j) 
+                    {
                         if (i == j) continue;
                         Asteroid a2 = asteroids[j];
                         // look 10 years in the future for collision
                               
                         boolean willCollide = willCollide(a1, a2, 3650, p1, p2);
                         
-                        if (willCollide) {
+                        if (willCollide) 
+                        {
                         	debug("COllide !!" + willCollide);
                            pushes.add(new Push(i, E, d2, time_of_push));
 //                           energy[i] = E;
@@ -110,7 +119,9 @@ public class Player implements pb.sim.Player {
                         
                     }
                     //System.out.println("  No collision ...");
-                } else {
+                } 
+                else 
+                {
                     int j = getHeaviestAsteroid(asteroids);
                     // search for collision with other asteroids
                     Asteroid a2 = asteroids[j];
@@ -138,10 +149,13 @@ public class Player implements pb.sim.Player {
                 }
             }
         }
-        if(pushes.size() > 0) {
+        if(pushes.size() > 0) 
+        {
             Push min_push = pushes.get(0);
-            for(Push push: pushes) {
-                if(push.energy < min_push.energy) {
+            for(Push push: pushes) 
+            {
+                if(push.energy < min_push.energy) 
+                {
                     min_push = push;
                 }
             }
@@ -153,7 +167,8 @@ public class Player implements pb.sim.Player {
         time_of_push = time + turns_per_retry;
     }
 
-    public int getFarthestAsteroid(Asteroid[] asteroids) {
+    public int getFarthestAsteroid(Asteroid[] asteroids) 
+    {
         int index = 0;
         double maxDistance = 0;
         Point point = new Point();
@@ -169,8 +184,8 @@ public class Player implements pb.sim.Player {
         return index;
     }
 
-    public boolean willCollide(Asteroid a11, Asteroid a22, long timeInterval,Point p1, Point p2){
-    	
+    public boolean willCollide(Asteroid a11, Asteroid a22, long timeInterval,Point p1, Point p2)
+    {    	
     	Asteroid a1, a2;
         //Make sure a1 is always the one has bigger period to short the loop time
         if(a11.orbit.period() > a22.orbit.period()){
@@ -180,7 +195,7 @@ public class Player implements pb.sim.Player {
         	a1 = a11;
         	a2 = a22;
         }
-        long threshold = 10;
+        long threshold = 20;
         ArrayList<Long> cts = getCollisonPoints(a1, a2);
        
         a1.orbit.positionAt(time - a1.epoch, p1);
@@ -191,7 +206,8 @@ public class Player implements pb.sim.Player {
             return true;
         }
 
-        for(int i = 0; i < cts.size(); i++){
+        for(int i = 0; i < cts.size(); i++)
+        {
             long startTime = cts.get(i) - threshold;
             long endTime = cts.get(i) + threshold;
 
@@ -215,7 +231,8 @@ public class Player implements pb.sim.Player {
 
     }
 
-    public boolean willOverlap(Point p1, double r1, Point p2, double r2){
+    public boolean willOverlap(Point p1, double r1, Point p2, double r2)
+    {
         double distance = Point.distance(p1, p2);
         if(distance < (r1 + r2))
             return true;
@@ -223,7 +240,8 @@ public class Player implements pb.sim.Player {
         return false;
     }
 
-    public ArrayList<Long> getCollisonPoints(Asteroid a1, Asteroid a2){
+    public ArrayList<Long> getCollisonPoints(Asteroid a1, Asteroid a2)
+    {
 
         double period = a1.orbit.period();
         Point tmp = new Point();
@@ -254,11 +272,13 @@ public class Player implements pb.sim.Player {
         return ret;
     }
 
-    public void debug(String str){
+    public void debug(String str)
+    {
         //System.out.print("debug: " + str + "\n");
     }
 
-    private int getLightestAsteroid(Asteroid asteroids[]) {
+    private int getLightestAsteroid(Asteroid asteroids[]) 
+    {
         int min = 1;
         for (int i = 0; i < asteroids.length; i++) {
             if (asteroids[i].mass < asteroids[min].mass)
@@ -267,7 +287,8 @@ public class Player implements pb.sim.Player {
         return min;
     }
 
-    private int getHeaviestAsteroid(Asteroid asteroids[]) {
+    private int getHeaviestAsteroid(Asteroid asteroids[])
+    {
         int max = 1;
         for (int i = 0; i < asteroids.length; i++) {
             if (asteroids[i].mass > asteroids[max].mass)
@@ -277,4 +298,3 @@ public class Player implements pb.sim.Player {
     }
 
 }
-

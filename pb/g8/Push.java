@@ -1,8 +1,5 @@
 package pb.g8;
 
-/**
- * Created by naman on 10/11/15.
- */
 public class Push {
 
     public int asteroid_id;
