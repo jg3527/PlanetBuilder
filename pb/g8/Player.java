@@ -9,7 +9,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.*;
 
+import net.sf.javaml.clustering.Clusterer;
+import net.sf.javaml.clustering.KMeans;
+import net.sf.javaml.core.Dataset;
+import net.sf.javaml.core.DefaultDataset;
+import net.sf.javaml.core.DenseInstance;
+import net.sf.javaml.core.Instance;
+import net.sf.javaml.tools.data.FileHandler;
 import pb.sim.Asteroid;
 import pb.sim.InvalidOrbitException;
 import pb.sim.Orbit;
@@ -36,10 +44,11 @@ public class Player implements pb.sim.Player {
     private int retries_per_turn = 1;
     private int turns_per_retry = 3;
     private int total_number;
-    private HashMap<Integer, List<Long>> asteroidClusters;
     private int cluster_number = 0;
     //key is the id of ast, value is the index of ast
     private HashMap<Long, Asteroid> indexMap;
+
+    Map<Integer, List<Long>> asteroidClusters;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -49,6 +58,85 @@ public class Player implements pb.sim.Player {
         this.time_limit = time_limit;
         this.total_number = asteroids.length;
         refreshIndexMap(asteroids);
+        int clusterCount = numberOfClusters(asteroids);
+        asteroidClusters = getAsteroidClusters(asteroids, clusterCount);
+    }
+
+    private Map<Integer, List<Long>> getAsteroidClusters(Asteroid[] asteroids, int clusterCount) {
+        // keeps track of all asteroid ids that have not been assigned to a cluster
+        Set<Long> remainingAsteroidIds = getAsteroidIds(asteroids);
+        // gets the clusters for the provided dataset
+        Dataset[] clusters = getDataSet(asteroids, clusterCount);
+        Map<Integer, List<Long>> result = new HashMap<Integer, List<Long>>();
+        for(int ii = 0; ii < clusters.length; ii++) {
+            List<Long> asteroidIds = new ArrayList<Long>();
+            for (Instance instance : clusters[ii]) {
+                // gets asteroid associated with the instance
+                for (Asteroid asteroid : asteroids) {
+                    if (remainingAsteroidIds.contains(asteroid.id)) {
+                        if (asteroid.orbit.a == instance.value(0)) {
+                            asteroidIds.add(asteroid.id);
+                            remainingAsteroidIds.remove(asteroid.id);
+                        }
+                    }
+                }
+            }
+            result.put(ii, asteroidIds);
+        }
+        // add all asteroids that we don't want to consider in cluster -1
+        result.put(-1, new ArrayList<Long>(remainingAsteroidIds));
+        return result;
+    }
+
+    private Set<Long> getAsteroidIds(Asteroid[] asteroids) {
+        Set<Long> ids = new HashSet<Long>();
+        for(Asteroid asteroid: asteroids) {
+            ids.add(asteroid.id);
+        }
+        return ids;
+    }
+
+    private Dataset[] getDataSet(Asteroid[] asteroids, int clusterCount) {
+        // create default data set
+        Dataset data = new DefaultDataset();
+        // create instances and populate the data set
+        for(Asteroid asteroid: asteroids) {
+            Instance instance = new DenseInstance(new double[] {asteroid.orbit.a});
+            data.add(instance);
+        }
+        /* Create a new instance of the KMeans algorithm, with no options
+         * specified. By default this will generate 4 clusters.
+         */
+        Clusterer km = new KMeans(clusterCount);
+        /*  Cluster the data, it will be returned as an array of data sets,
+         *  with each dataset representing a cluster.
+         */
+        return km.cluster(data);
+    }
+
+    private void refreshIndexMap(Asteroid[] asteroids){
+        indexMap = new HashMap<Long, Asteroid>();
+        for (Asteroid asteroid : asteroids) {
+            indexMap.put(asteroid.id, asteroid);
+        }
+    }
+
+    private int numberOfClusters(Asteroid[] asteroids)
+    {
+        double clusters = asteroids.length;
+        for (Asteroid a1: asteroids) {
+            double nearbyAsteroids = 0;
+            for(Asteroid a2: asteroids) {
+                if(a1.id != a2.id) {
+                    //distance between them less than some threshold
+                    //if(Math.abs(a1.orbit.a - a2.orbit.a) < ) {
+                    nearbyAsteroids++;
+                    //}
+                }
+            }
+            clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
+        }
+        return (int) clusters;
     }
 
     // try to push asteroid
@@ -329,7 +417,8 @@ public class Player implements pb.sim.Player {
         }
         return max;
     }
-    private List<Long> getOutersidePart(Asteroid[] asteroids){
+
+    private List<Long> getOutersidePart(Asteroid[] asteroids) {
     	ArrayList<Long> ret = new ArrayList<Long>();
     	Arrays.sort(asteroids, new Comparator<Asteroid>() {
     	    public int compare(Asteroid a1, Asteroid a2) {
@@ -350,25 +439,9 @@ public class Player implements pb.sim.Player {
     	}
     	return ret;	
     }
-    private double numberOfClusters(Asteroid[] asteroids)
-    {
-        double clusters = asteroids.length;
-        for (Asteroid a1: asteroids) {
-            double nearbyAsteroids = 0;
-            for(Asteroid a2: asteroids) {
-                if(a1.id != a2.id) {
-                    //distance between them less than some threshold
-                    //if(Math.abs(a1.orbit.a - a2.orbit.a) < ) {
-                    	nearbyAsteroids++;
-                    //}
-                }
-            }
-            clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
-        }
-        return clusters;
-    }
-   /* private double tryToCollideOutside(Asteroid[] asteroids){
-    	
+
+    /*private double tryToCollideOutside(Asteroid[] asteroids){
+
     	List<Long> ids = new ArrayList<Long>();
 
     	Point origin = new Point(0, 0);
@@ -389,12 +462,6 @@ public class Player implements pb.sim.Player {
     		for(int i = 1; i <  )
     	}
     }*/
-    private void refreshIndexMap(Asteroid[] asteroids){
-    	indexMap = new HashMap<Long, Asteroid>();
-    	for(int i = 0; i < asteroids.length; i++){
-    		indexMap.put(asteroids[i].id, asteroids[i]);
-    	}
-    }
 
 }
 
