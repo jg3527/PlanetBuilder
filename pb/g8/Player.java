@@ -32,7 +32,8 @@ public class Player implements pb.sim.Player {
     private int turns_per_retry = 3;
 
     // print orbital information
-    public void init(Asteroid[] asteroids, long time_limit) {
+    public void init(Asteroid[] asteroids, long time_limit) 
+    {
         if (Orbit.dt() != 24 * 60 * 60)
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
@@ -48,7 +49,8 @@ public class Player implements pb.sim.Player {
         //System.out.println("Year: " + (1 + time / 365));
         //System.out.println("Day: "  + (1 + time % 365));
         List<Push> pushes = new ArrayList<Push>();
-        for (int retry = 1 ; retry <= retries_per_turn ; ++retry) {
+        for (int retry = 1 ; retry <= retries_per_turn ; ++retry) 
+        {
             // pick a random asteroid and get its velocity
             int i = 0;
             if(iteration == 1) 
@@ -57,7 +59,7 @@ public class Player implements pb.sim.Player {
             }
             else
             {
-                i = getLightestAsteroid(asteroids);
+                i = getHeaviestAsteroid(asteroids);
             }
 
             // i = getClosestPairAsteroid(asteroids);
@@ -97,8 +99,8 @@ public class Player implements pb.sim.Player {
                     {
                         if (i == j) continue;
                         Asteroid a2 = asteroids[j];
-                        // look 10 years in the future for collision
-                              
+                        
+                        // look in the future for collision         
                         boolean willCollide = willCollide(a1, a2, time_left_per_asteroid, p1, p2);
                         
                         if (willCollide) 
@@ -123,17 +125,18 @@ public class Player implements pb.sim.Player {
                     }
                     //System.out.println("  No collision ...");
                 } 
+                
                 else 
                 {
-                    int j = getHeaviestAsteroid(asteroids);
                     // search for collision with other asteroids
-                    Asteroid a2 = asteroids[j];
+                    Asteroid a2 = asteroids[i];
 
                     // look 10 years in the future for collision
                     //boolean willCollideOrigin = willCollideOrigin(a1, a2, energy, direction, i, E, d2);
                     boolean willCollide = willCollide(a1, a2, time_left_per_asteroid, p1, p2);
                   
-                    if(willCollide){
+                    if(willCollide)
+                    {
                     	debug("COllide " + willCollide);
                         energy[i] = E;
                         direction[i] = d2;
@@ -157,11 +160,13 @@ public class Player implements pb.sim.Player {
             Push min_push = pushes.get(0);
             for(Push push: pushes) 
             {
+            	System.out.println("Energy: " + push);
                 if(push.energy < min_push.energy) 
                 {
                     min_push = push;
                 }
             }
+            System.out.println("Min Energy: " + min_push);
             energy[min_push.asteroid_id] = min_push.energy;
             direction[min_push.asteroid_id] = min_push.direction;
             time_of_push = min_push.time_of_push;
@@ -191,10 +196,13 @@ public class Player implements pb.sim.Player {
     {    	
     	Asteroid a1, a2;
         //Make sure a1 is always the one has bigger period to short the loop time
-        if(a11.orbit.period() > a22.orbit.period()){
+        if(a11.orbit.period() > a22.orbit.period())
+        {
             a1 = a22;
             a2 = a11;
-        }else{
+        }
+        else
+        {
         	a1 = a11;
         	a2 = a22;
         }
@@ -203,7 +211,8 @@ public class Player implements pb.sim.Player {
        
         a1.orbit.positionAt(time - a1.epoch, p1);
         a2.orbit.positionAt(time - a2.epoch, p2);
-        if(willOverlap(p1, a1.radius(), p2, a2.radius())){
+        if(willOverlap(p1, a1.radius(), p2, a2.radius()))
+        {
             debug("overlap ***********");
             time_of_push = time + 2;
             return true;
@@ -220,7 +229,8 @@ public class Player implements pb.sim.Player {
                 for(int t = (int)startTime; t <= endTime; t++){
                     a1.orbit.positionAt(t - a1.epoch, p1);
                     a2.orbit.positionAt(t - a2.epoch, p2);
-                    if(willOverlap(p1, a1.radius(), p2, a2.radius())){
+                    if(willOverlap(p1, a1.radius(), p2, a2.radius()))
+                    {
                     	debug("will overlap");
 	                    	time_of_push = t + 1;
 	                        return true;
@@ -245,7 +255,6 @@ public class Player implements pb.sim.Player {
 
     public ArrayList<Long> getCollisonPoints(Asteroid a1, Asteroid a2)
     {
-
         double period = a1.orbit.period();
         Point tmp = new Point();
         Point center = a2.orbit.center();
@@ -257,7 +266,8 @@ public class Player implements pb.sim.Player {
         for(int i = 0; i < period; i++){
             a1.orbit.positionAt(time + i - a1.epoch, tmp);
             double distance =Point.distance(foci1, tmp) + Point.distance(foci2, tmp);
-            if(Math.abs(2 * a - distance) <= threshold){
+            if(Math.abs(2 * a - distance) <= threshold)
+            {
                 Long ct = time + i;
                 cts.add(ct);
             }
@@ -265,8 +275,10 @@ public class Player implements pb.sim.Player {
         ArrayList<Long> ret = new ArrayList<Long>();
         if(cts.size() > 0){
             ret.add(cts.get(0));
-            for(int i = 1; i < cts.size(); i++){
-                if(cts.get(i) - cts.get(i - 1) > 1){
+            for(int i = 1; i < cts.size(); i++)
+            {
+                if(cts.get(i) - cts.get(i - 1) > 1)
+                {
                     ret.add(cts.get(i));
                 }
             }
@@ -283,7 +295,8 @@ public class Player implements pb.sim.Player {
     private int getLightestAsteroid(Asteroid asteroids[]) 
     {
         int min = 1;
-        for (int i = 0; i < asteroids.length; i++) {
+        for (int i = 0; i < asteroids.length; i++)
+        {
             if (asteroids[i].mass < asteroids[min].mass)
                 min = i;
         }
@@ -293,7 +306,8 @@ public class Player implements pb.sim.Player {
     private int getHeaviestAsteroid(Asteroid asteroids[])
     {
         int max = 1;
-        for (int i = 0; i < asteroids.length; i++) {
+        for (int i = 0; i < asteroids.length; i++)
+        {
             if (asteroids[i].mass > asteroids[max].mass)
                 max = i;
         }
