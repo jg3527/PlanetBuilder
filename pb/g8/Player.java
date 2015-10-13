@@ -2,6 +2,8 @@ package pb.g8;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -30,6 +32,7 @@ public class Player implements pb.sim.Player {
     // number of retries
     private int retries_per_turn = 1;
     private int turns_per_retry = 3;
+    private int total_number;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -37,6 +40,7 @@ public class Player implements pb.sim.Player {
         if (Orbit.dt() != 24 * 60 * 60)
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
+        this.total_number = asteroids.length;
     }
 
     // try to push asteroid
@@ -316,7 +320,26 @@ public class Player implements pb.sim.Player {
         }
         return max;
     }
-
+    private List<Long> getOutersidePart(Asteroid[] asteroids){
+    	ArrayList<Long> ret = new ArrayList<Long>();
+    	Arrays.sort(asteroids, new Comparator<Asteroid>() {
+    	    public int compare(Asteroid a1, Asteroid a2) {
+    	        return (int)(a1.orbit.a - a2.orbit.a);
+    	    }
+    	});
+    	double sum = 0;
+    	for(int i = 0; i < asteroids.length; i++){
+    		sum += asteroids[i].mass;
+    	}
+    	double half = 0;
+    	for(int i = 0; i < asteroids.length; i++){
+    		half += asteroids[i].mass;
+    		if(half >= sum / 2){
+    			ret.add(asteroids[i].id);
+    		}	
+    	}
+    	return ret;	
+    }
     private double numberOfClusters(Asteroid[] asteroids)
     {
         double clusters = asteroids.length;
@@ -324,8 +347,9 @@ public class Player implements pb.sim.Player {
             double nearbyAsteroids = 0;
             for(Asteroid a2: asteroids) {
                 if(a1.id != a2.id) {
-                    //if(distance between them less than some threshold) {
-                    nearbyAsteroids++;
+                    //distance between them less than some threshold
+                    //if(Math.abs(a1.orbit.a - a2.orbit.a) < ) {
+                    	nearbyAsteroids++;
                     //}
                 }
             }
