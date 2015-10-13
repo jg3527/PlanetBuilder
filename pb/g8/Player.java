@@ -3,7 +3,10 @@ package pb.g8;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -33,6 +36,10 @@ public class Player implements pb.sim.Player {
     private int retries_per_turn = 1;
     private int turns_per_retry = 3;
     private int total_number;
+    private HashMap<Integer, List<Long>> map;
+    private int cluster_number = 0;
+    //key is the id of ast, value is the index of ast
+    private HashMap<Long, Integer> indexMap;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -41,11 +48,14 @@ public class Player implements pb.sim.Player {
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
         this.total_number = asteroids.length;
+        map = new HashMap<Integer, List<Long>>();
+        refreshIndexMap(asteroids);
     }
 
     // try to push asteroid
     public void play(Asteroid[] asteroids, double[] energy, double[] direction) 
     {
+    	refreshIndexMap(asteroids);
         // if not yet time to push do nothing
         if (++time <= time_of_push) return;
         for(Asteroid a: asteroids) {
@@ -337,8 +347,7 @@ public class Player implements pb.sim.Player {
     			return ret;
     		}
     		half += asteroids[i].mass;
-    		ret.add(asteroids[i].id);
-    			
+    		ret.add(asteroids[i].id);		
     	}
     	return ret;	
     }
@@ -359,5 +368,34 @@ public class Player implements pb.sim.Player {
         }
         return clusters;
     }
+    private double tryToCollideOutside(Asteroid[] asteroids){
+    	/*
+    	List<Long> ids = new ArrayList<Long>();
+
+    	Point origin = new Point(0, 0);
+    	for(int i = 0; i < cluster_number; i++){
+    		ids = map.get(i);
+    		Collections.sort(ids, new Comparator<Long>() {
+				@Override
+				public int compare(Long l1, Long l2) {
+					Asteroid a1 = asteroids[indexMap.get(l1)];
+					Asteroid a2 = asteroids[indexMap.get(l2)];
+					double d1 = Point.distance(origin, a1.orbit.positionAt(time - a1.epoch));
+					double d2 = Point.distance(origin, a2.orbit.positionAt(time - a2.epoch));
+					return (int)(d1 - d2);
+				}
+			});
+    		if(ids.size() == 0)
+    			continue;
+    		for(int i = 1; i < )
+    	}*/
+    }
+    private void refreshIndexMap(Asteroid[] asteroids){
+    	indexMap = new HashMap<Long, Integer>();
+    	for(int i = 0; i < asteroids.length; i++){
+    		indexMap.put(asteroids[i].id, i);
+    	}
+    }
 
 }
+
