@@ -36,10 +36,10 @@ public class Player implements pb.sim.Player {
     private int retries_per_turn = 1;
     private int turns_per_retry = 3;
     private int total_number;
-    private HashMap<Integer, List<Long>> map;
+    private HashMap<Integer, List<Long>> asteroidClusters;
     private int cluster_number = 0;
     //key is the id of ast, value is the index of ast
-    private HashMap<Long, Integer> indexMap;
+    private HashMap<Long, Asteroid> indexMap;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -48,7 +48,6 @@ public class Player implements pb.sim.Player {
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
         this.total_number = asteroids.length;
-        map = new HashMap<Integer, List<Long>>();
         refreshIndexMap(asteroids);
     }
 
@@ -368,8 +367,8 @@ public class Player implements pb.sim.Player {
         }
         return clusters;
     }
-    private double tryToCollideOutside(Asteroid[] asteroids){
-    	/*
+   /* private double tryToCollideOutside(Asteroid[] asteroids){
+    	
     	List<Long> ids = new ArrayList<Long>();
 
     	Point origin = new Point(0, 0);
@@ -387,13 +386,13 @@ public class Player implements pb.sim.Player {
 			});
     		if(ids.size() == 0)
     			continue;
-    		for(int i = 1; i < )
-    	}*/
-    }
+    		for(int i = 1; i <  )
+    	}
+    }*/
     private void refreshIndexMap(Asteroid[] asteroids){
-    	indexMap = new HashMap<Long, Integer>();
+    	indexMap = new HashMap<Long, Asteroid>();
     	for(int i = 0; i < asteroids.length; i++){
-    		indexMap.put(asteroids[i].id, i);
+    		indexMap.put(asteroids[i].id, asteroids[i]);
     	}
     }
 
