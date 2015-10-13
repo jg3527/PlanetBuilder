@@ -658,6 +658,18 @@ class Simulator {
 		return files;
 	}
 
+	// last modified
+	private static long modified(Set <File> files)
+	{
+		long last_date = 0;
+		for (File file : files) {
+			long date = file.lastModified();
+			if (last_date < date)
+				last_date = date;
+		}
+		return last_date;
+	}
+
 	// compile and load
 	private static Class <Player> load(String group) throws IOException,
 	                                       ReflectiveOperationException
@@ -669,14 +681,8 @@ class Simulator {
 		if (!class_file.exists() && !source_file.exists())
 			throw new FileNotFoundException("Missing source code");
 		Set <File> source_files = directory(dir, ".java");
-		if (!class_file.exists())
-			class_file = null;
-		else for (File file : source_files)
-			if (file.lastModified() > class_file.lastModified()) {
-				class_file = null;
-				break;
-			}
-		if (class_file == null) {
+		if (!class_file.exists() || modified(source_files) >=
+		                            class_file.lastModified()) {
 			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 			if (compiler == null)
 				throw new IOException("Cannot find Java compiler");
