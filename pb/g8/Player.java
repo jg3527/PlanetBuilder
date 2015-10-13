@@ -332,11 +332,13 @@ public class Player implements pb.sim.Player {
     		sum += asteroids[i].mass;
     	}
     	double half = 0;
-    	for(int i = 0; i < asteroids.length; i++){
-    		half += asteroids[i].mass;
+    	for(int i = asteroids.length - 1; i >= 0; i++){
     		if(half >= sum / 2){
-    			ret.add(asteroids[i].id);
-    		}	
+    			return ret;
+    		}
+    		half += asteroids[i].mass;
+    		ret.add(asteroids[i].id);
+    			
     	}
     	return ret;	
     }
