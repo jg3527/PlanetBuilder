@@ -44,6 +44,9 @@ public class Player implements pb.sim.Player {
     {
         // if not yet time to push do nothing
         if (++time <= time_of_push) return;
+        for(Asteroid a: asteroids) {
+            System.out.println(a.id);
+        }
         long time_left_per_asteroid = (time_limit - time)/asteroids.length;
         time_left_per_asteroid = Math.max(time_left_per_asteroid, 3650);
         //System.out.println("Year: " + (1 + time / 365));
@@ -160,13 +163,13 @@ public class Player implements pb.sim.Player {
             Push min_push = pushes.get(0);
             for(Push push: pushes) 
             {
-            	System.out.println("Energy: " + push);
+                System.out.println("Energy:" + push);
                 if(push.energy < min_push.energy) 
                 {
                     min_push = push;
                 }
             }
-            System.out.println("Min Energy: " + min_push);
+            System.out.println("Min Energy:" + min_push);
             energy[min_push.asteroid_id] = min_push.energy;
             direction[min_push.asteroid_id] = min_push.direction;
             time_of_push = min_push.time_of_push;
@@ -312,6 +315,23 @@ public class Player implements pb.sim.Player {
                 max = i;
         }
         return max;
+    }
+
+    private double numberOfClusters(Asteroid[] asteroids)
+    {
+        double clusters = asteroids.length;
+        for (Asteroid a1: asteroids) {
+            double nearbyAsteroids = 0;
+            for(Asteroid a2: asteroids) {
+                if(a1.id != a2.id) {
+                    //if(distance between them less than some threshold) {
+                    nearbyAsteroids++;
+                    //}
+                }
+            }
+            clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
+        }
+        return clusters;
     }
 
 }
