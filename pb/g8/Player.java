@@ -57,12 +57,16 @@ public class Player implements pb.sim.Player {
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
         this.total_number = asteroids.length;
+        refreshIndexMap(asteroids);
+        reorderCluster(asteroids);
+        System.out.println("Initialization done!");
+    }
+
+    private void reorderCluster(Asteroid[] asteroids) {
         double threshold = Double.MAX_VALUE;
         Set<Long> relevantAsteroidIds = getOutersidePart(asteroids);
-        refreshIndexMap(asteroids);
         int clusterCount = numberOfClusters(relevantAsteroidIds, threshold);
         asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
-        System.out.println("Initialization done!");
     }
 
     private Set<Long> getOutersidePart(Asteroid[] asteroids) {
@@ -170,9 +174,7 @@ public class Player implements pb.sim.Player {
     	refreshIndexMap(asteroids);
         // if not yet time to push do nothing
         if (++time <= time_of_push) return;
-        for(Asteroid a: asteroids) {
-            System.out.println(a.id);
-        }
+        updateClusters(asteroids);
         long time_left_per_asteroid = (time_limit - time)/asteroids.length;
         time_left_per_asteroid = Math.max(time_left_per_asteroid, 3650);
         //System.out.println("Year: " + (1 + time / 365));
@@ -245,6 +247,64 @@ public class Player implements pb.sim.Player {
         }
         	}
         }
+
+    private void updateClusters(Asteroid[] asteroids) {
+        int count = 0;
+        for(Map.Entry<Integer, List<Long>> entry: asteroidClusters.entrySet()) {
+            count += entry.getValue().size();
+        }
+        if(count == asteroids.length) {
+            return;
+        }
+        Set<Long> newAsteroidIds = new HashSet<Long>();
+        for(Asteroid asteroid: asteroids) {
+            newAsteroidIds.add(asteroid.id);
+        }
+        int clusterId = -1;
+        Set<Long> idsToRemove = new HashSet<Long>();
+        int removedAsteroidCount = 0;
+        long newId = -1;
+        // go through all the asteroids present in previous cluster config
+        for(Map.Entry<Integer, List<Long>> entry: asteroidClusters.entrySet()) {
+            List<Long> ids = entry.getValue();
+            // looping on each asteroid for a cluster
+            for(Long id: ids) {
+                // if the cluster asteroid still exist, remove it from new asteroids
+                // else need to remove it from cluster
+                if(newAsteroidIds.contains(id)) {
+                    newAsteroidIds.remove(id);
+                } else {
+                    removedAsteroidCount++;
+                    // If removed asteroids are greater than 2, time to reorder
+                    if(removedAsteroidCount > 2) {
+                        reorderCluster(asteroids);
+                        return;
+                    }
+                    // if everything is ok, remove this from cluster
+                    clusterId = entry.getKey();
+                    idsToRemove.add(id);
+                }
+            }
+        }
+        // if more than 1 new asteroid, reorder and return
+        if(newAsteroidIds.size() != 1) {
+            reorderCluster(asteroids);
+            return;
+        }
+        for(Long id: newAsteroidIds) {
+            newId = id;
+        }
+        // remove the asteroids from the cluster
+        List<Long> newAsteroidIdsForCluster = new ArrayList<Long>();
+        for(Long id: asteroidClusters.get(clusterId)) {
+            if(!idsToRemove.contains(id)) {
+                newAsteroidIdsForCluster.add(id);
+            }
+        }
+        asteroidClusters.put(clusterId, newAsteroidIdsForCluster);
+        // add new id to the cluster
+        asteroidClusters.get(clusterId).add(indexMap.get(newId).id);
+    }
 
     private long getClosestAsteroid(List<Long> asteroidIds) {
     	long min = asteroidIds.get(0);
