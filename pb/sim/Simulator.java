@@ -675,7 +675,7 @@ class Simulator {
 	                                       ReflectiveOperationException
 	{
 		String sep = File.separator;
-		String dir = "/home/naman/Documents/Studies/Courses/Sem3/PPS/PB/src/pb" + sep + group;
+		String dir = root + sep + group;
 		File class_file  = new File(dir + sep + "Player.class");
 		File source_file = new File(dir + sep + "Player.java");
 		if (!class_file.exists() && !source_file.exists())
