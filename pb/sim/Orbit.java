@@ -48,9 +48,8 @@ public class Orbit implements Iterable <Point> {
 		double e_x = (f * r.x - rv * v.x) / GM;
 		double e_y = (f * r.y - rv * v.y) / GM;
 		double e2 = e_x * e_x + e_y * e_y;
-		double e = Math.sqrt(e2);
-		if (e == 1.0) throw new InvalidOrbitException("Parabolic orbit");
-		if (e > 1.0) throw new InvalidOrbitException("Hyperbolic orbit");
+		if (e2 == 1.0) throw new InvalidOrbitException("Parabolic orbit");
+		if (e2 > 1.0) throw new InvalidOrbitException("Hyperbolic orbit");
 		// compute the major radius using r and υ
 		a = GM / (2.0 * GM / r1 - v2);
 		// compute the minor radius from a and e
@@ -60,6 +59,9 @@ public class Orbit implements Iterable <Point> {
 			A = Double.NaN;
 			Mo = Math.atan2(r.y, r.x);
 		} else {
+			// compute the eccentricity
+			double b_a = b / a;
+			double e = Math.sqrt(1.0 - b_a * b_a);
 			// compute the initial true anomaly θ
 			double cos_theta = (e_x * r.x + e_y * r.y) / (e * r1);
 			double theta = acos(cos_theta);
@@ -99,11 +101,11 @@ public class Orbit implements Iterable <Point> {
 		double b_a = b / a;
 		double e = Math.sqrt(1.0 - b_a * b_a);
 		// distance and direction from center
-		double len = a * e;
-		double dir = A + Math.PI;
+		double c1 = a * e;
+		double cD = A + Math.PI;
 		// translate coordinates
-		c.x = len * Math.cos(dir);
-		c.y = len * Math.sin(dir);
+		c.x = c1 * Math.cos(cD);
+		c.y = c1 * Math.sin(cD);
 	}
 
 	// find the position at time t
@@ -134,15 +136,15 @@ public class Orbit implements Iterable <Point> {
 		r.x = a * Math.cos(E);
 		r.y = b * Math.sin(E);
 		// rotate the axes by A
-		double len = Math.sqrt(r.x * r.x + r.y * r.y);
-		double dir = Math.atan2(r.y, r.x) + A;
-		r.x = len * Math.cos(dir);
-		r.y = len * Math.sin(dir);
+		double r1 = Math.sqrt(r.x * r.x + r.y * r.y);
+		double rD = Math.atan2(r.y, r.x) + A;
+		r.x = r1 * Math.cos(rD);
+		r.y = r1 * Math.sin(rD);
 		// move the center of the axes
-		len = a * e;
-		dir = A + Math.PI;
-		r.x += len * Math.cos(dir);
-		r.y += len * Math.sin(dir);
+		double c1 = a * e;
+		double cD = A + Math.PI;
+		r.x += c1 * Math.cos(cD);
+		r.y += c1 * Math.sin(cD);
 	}
 
 	// find the velocity at time t
@@ -159,12 +161,12 @@ public class Orbit implements Iterable <Point> {
 		double r_a = r1 / a;
 		double phi = acos(cos(e + e, r_a, 2.0 - r_a));
 		// compute the velocity direction assuming the foci are at xx'
-		double dir = Math.atan2(r.y, r.x) + (Math.PI - phi) * 0.5;
+		double vD = Math.atan2(r.y, r.x) + (Math.PI - phi) * 0.5;
 		// compute the velocity magnitude using the vis-visa equation
-		double len = Math.sqrt(GM * (2.0 / r1 - 1.0 / a));
+		double v1 = Math.sqrt((GM + GM) / r1 - GM / a);
 		// compute the velocity vector
-		v.x = len * Math.cos(dir);
-		v.y = len * Math.sin(dir);
+		v.x = v1 * Math.cos(vD);
+		v.y = v1 * Math.sin(vD);
 	}
 
 	// allocate Point and call center()
