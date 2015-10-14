@@ -40,7 +40,7 @@ public class Player implements pb.sim.Player {
     private int cluster_number = 0;
     //key is the id of ast, value is the index of ast
     private HashMap<Long, Asteroid> indexMap;
-
+    private double threshold;
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
     {
@@ -341,13 +341,14 @@ public class Player implements pb.sim.Player {
     		sum += asteroids[i].mass;
     	}
     	double half = 0;
-    	for(int i = asteroids.length - 1; i >= 0; i++){
+    	for(int i = asteroids.length - 1; i >= 0; i--){
     		if(half >= sum / 2){
     			return ret;
     		}
     		half += asteroids[i].mass;
     		ret.add(asteroids[i].id);		
     	}
+    	threshold = (indexMap.get(ret.get(0)).orbit.a - indexMap.get(ret.get(ret.size() - 1)).orbit.a) / (ret.size() - 1);
     	return ret;	
     }
     private double numberOfClusters(Asteroid[] asteroids)
@@ -367,8 +368,7 @@ public class Player implements pb.sim.Player {
         }
         return clusters;
     }
-    private double tryToCollideOutside(Asteroid[] asteroids){
-    	
+    private void tryToCollideOutside(Asteroid[] asteroids){	
     	List<Long> ids = new ArrayList<Long>();
 
     	Point origin = new Point(0, 0);
@@ -391,11 +391,9 @@ public class Player implements pb.sim.Player {
     		if(size == 1){
     			//TODO push it to the next cluster
     		}else{
-	    		for(int j = 1; j < size; j++){
-	    			Asteroid a1 = indexMap.get(ids.get(0));
-	    		}
+	    		//TODO 
+    			//push it to the near outsideone
     		}
-    		
     	}
     }
     private void refreshIndexMap(Asteroid[] asteroids){
@@ -404,12 +402,7 @@ public class Player implements pb.sim.Player {
     		indexMap.put(asteroids[i].id, asteroids[i]);
     	}
     }
-    private void checkCollisons(Asteroid a1, List<Asteroid> asteroids){
-    	Point v = a1.orbit.velocityAt(time);
-        
-    	double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
-        double v2 = 0.0;
-    }
+    
 
 }
 
