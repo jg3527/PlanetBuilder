@@ -57,33 +57,56 @@ public class Player implements pb.sim.Player {
             throw new IllegalStateException("Time quantum is not a day");
         this.time_limit = time_limit;
         this.total_number = asteroids.length;
+        double threshold = Double.MAX_VALUE;
+        Set<Long> relevantAsteroidIds = getOutersidePart(asteroids);
         refreshIndexMap(asteroids);
-        int clusterCount = numberOfClusters(asteroids);
-        asteroidClusters = getAsteroidClusters(asteroids, clusterCount);
+        int clusterCount = numberOfClusters(relevantAsteroidIds, threshold);
+        asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
+        System.out.println("Initialization done!");
     }
 
-    private Map<Integer, List<Long>> getAsteroidClusters(Asteroid[] asteroids, int clusterCount) {
-        // keeps track of all asteroid ids that have not been assigned to a cluster
-        Set<Long> remainingAsteroidIds = getAsteroidIds(asteroids);
+    private Set<Long> getOutersidePart(Asteroid[] asteroids) {
+        Set<Long> ret = new HashSet<Long>();
+        Arrays.sort(asteroids, new Comparator<Asteroid>() {
+            public int compare(Asteroid a1, Asteroid a2) {
+                return (int)(a1.orbit.a - a2.orbit.a);
+            }
+        });
+        double sum = 0;
+        for(int i = 0; i < asteroids.length; i++){
+            sum += asteroids[i].mass;
+        }
+        double half = 0;
+        for(int i = asteroids.length - 1; i >= 0; i--) {
+            if(half >= sum / 2){
+                return ret;
+            }
+            half += asteroids[i].mass;
+            ret.add(asteroids[i].id);
+        }
+        return ret;
+    }
+
+    private Map<Integer, List<Long>> getAsteroidClusters(Set<Long> relevantAsteroidIds, int clusterCount) {
         // gets the clusters for the provided dataset
-        Dataset[] clusters = getDataSet(asteroids, clusterCount);
+        Dataset[] clusters = computeClusters(relevantAsteroidIds, clusterCount);
         Map<Integer, List<Long>> result = new HashMap<Integer, List<Long>>();
         for(int ii = 0; ii < clusters.length; ii++) {
             List<Long> asteroidIds = new ArrayList<Long>();
             for (Instance instance : clusters[ii]) {
                 // gets asteroid associated with the instance
-                for (Asteroid asteroid : asteroids) {
-                    if (remainingAsteroidIds.contains(asteroid.id)) {
-                        if (asteroid.orbit.a == instance.value(0)) {
-                            asteroidIds.add(asteroid.id);
-                            remainingAsteroidIds.remove(asteroid.id);
-                        }
+                for(Long asteroidId: relevantAsteroidIds) {
+                    Asteroid asteroid = indexMap.get(asteroidId);
+                    if (asteroid.orbit.a == instance.value(0)) {
+                        asteroidIds.add(asteroid.id);
                     }
                 }
             }
             result.put(ii, asteroidIds);
         }
         // add all asteroids that we don't want to consider in cluster -1
+        Set<Long> remainingAsteroidIds = indexMap.keySet();
+        remainingAsteroidIds.removeAll(relevantAsteroidIds);
         result.put(-1, new ArrayList<Long>(remainingAsteroidIds));
         return result;
     }
@@ -96,11 +119,12 @@ public class Player implements pb.sim.Player {
         return ids;
     }
 
-    private Dataset[] getDataSet(Asteroid[] asteroids, int clusterCount) {
+    private Dataset[] computeClusters(Set<Long> relevantAsteroidIds, int clusterCount) {
         // create default data set
         Dataset data = new DefaultDataset();
         // create instances and populate the data set
-        for(Asteroid asteroid: asteroids) {
+        for(Long asteroidId: relevantAsteroidIds) {
+            Asteroid asteroid = indexMap.get(asteroidId);
             Instance instance = new DenseInstance(new double[] {asteroid.orbit.a});
             data.add(instance);
         }
@@ -121,17 +145,18 @@ public class Player implements pb.sim.Player {
         }
     }
 
-    private int numberOfClusters(Asteroid[] asteroids)
+    private int numberOfClusters(Set<Long> relevantAsteroidIds, double threshold)
     {
-        double clusters = asteroids.length;
-        for (Asteroid a1: asteroids) {
+        double clusters = relevantAsteroidIds.size();
+        for (Long id1: relevantAsteroidIds) {
             double nearbyAsteroids = 0;
-            for(Asteroid a2: asteroids) {
-                if(a1.id != a2.id) {
-                    //distance between them less than some threshold
-                    //if(Math.abs(a1.orbit.a - a2.orbit.a) < ) {
-                    nearbyAsteroids++;
-                    //}
+            Asteroid a1 = indexMap.get(id1);
+            for (Long id2: relevantAsteroidIds) {
+                if (id1.longValue() != id2.longValue()) {
+                    Asteroid a2 = indexMap.get(id2);
+                    if(Math.abs(a1.orbit.a - a2.orbit.a) < threshold) {
+                        nearbyAsteroids++;
+                    }
                 }
             }
             clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
@@ -416,28 +441,6 @@ public class Player implements pb.sim.Player {
                 max = i;
         }
         return max;
-    }
-
-    private List<Long> getOutersidePart(Asteroid[] asteroids) {
-    	ArrayList<Long> ret = new ArrayList<Long>();
-    	Arrays.sort(asteroids, new Comparator<Asteroid>() {
-    	    public int compare(Asteroid a1, Asteroid a2) {
-    	        return (int)(a1.orbit.a - a2.orbit.a);
-    	    }
-    	});
-    	double sum = 0;
-    	for(int i = 0; i < asteroids.length; i++){
-    		sum += asteroids[i].mass;
-    	}
-    	double half = 0;
-    	for(int i = asteroids.length - 1; i >= 0; i++){
-    		if(half >= sum / 2){
-    			return ret;
-    		}
-    		half += asteroids[i].mass;
-    		ret.add(asteroids[i].id);		
-    	}
-    	return ret;	
     }
 
     /*private double tryToCollideOutside(Asteroid[] asteroids){
