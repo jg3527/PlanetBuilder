@@ -3,7 +3,6 @@ package pb.g8;
 
 import java.util.*;
 
-import com.sun.javafx.scene.traversal.Direction;
 
 import net.sf.javaml.clustering.Clusterer;
 import net.sf.javaml.clustering.KMeans;
@@ -11,10 +10,7 @@ import net.sf.javaml.core.Dataset;
 import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.DenseInstance;
 import net.sf.javaml.core.Instance;
-import net.sf.javaml.distance.MahalanobisDistance;
-import net.sf.javaml.tools.data.FileHandler;
 import pb.sim.Asteroid;
-import pb.sim.InvalidOrbitException;
 import pb.sim.Orbit;
 import pb.sim.Point;
 
@@ -46,7 +42,7 @@ public class Player implements pb.sim.Player {
     private HashMap<Long, Asteroid> indexMap;
   //key is the id of ast, value is the index of ast
     private HashMap<Long, Integer> indexHashMap; 
-    private double threshold;
+    private double clusterThreshold;
     private HashMap<Integer, Boolean> pushAgain;
 
     // print orbital information
@@ -65,9 +61,9 @@ public class Player implements pb.sim.Player {
     }
 
     private void reorderCluster(Asteroid[] asteroids) {
-        double threshold = Double.MAX_VALUE;
         Set<Long> relevantAsteroidIds = getOutersidePart(asteroids);
-        int clusterCount = numberOfClusters(relevantAsteroidIds, threshold);
+        int clusterCount = numberOfClusters(relevantAsteroidIds);
+        System.err.println(clusterCount);
         asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
     }
 
@@ -125,7 +121,7 @@ public class Player implements pb.sim.Player {
     }
 
 
-    private int numberOfClusters(Set<Long> relevantAsteroidIds, double threshold)
+    private int numberOfClusters(Set<Long> relevantAsteroidIds)
     {
         double clusters = relevantAsteroidIds.size();
         for (Long id1: relevantAsteroidIds) {
@@ -134,7 +130,7 @@ public class Player implements pb.sim.Player {
             for (Long id2: relevantAsteroidIds) {
                 if (id1.longValue() != id2.longValue()) {
                     Asteroid a2 = indexMap.get(id2);
-                    if(Math.abs(a1.orbit.a - a2.orbit.a) < threshold) {
+                    if(Math.abs(a1.orbit.a - a2.orbit.a) < clusterThreshold) {
                         nearbyAsteroids++;
                     }
                 }
@@ -159,9 +155,6 @@ public class Player implements pb.sim.Player {
         }
         if(count == cluster_number){
         	return;
-        }
-        for(Asteroid a: asteroids) {
-            System.out.println(a.id);
         }
         long time_left_per_asteroid = (time_limit - time)/asteroids.length;
         time_left_per_asteroid = Math.max(time_left_per_asteroid, 3650);
@@ -461,35 +454,18 @@ public class Player implements pb.sim.Player {
     		sum += asteroids[i].mass;
     	}
     	double half = 0;
-    	long firstId = asteroids[0].id;
-    	long secondId = asteroids[0].id;
+    	long firstId = asteroids[asteroids.length - 1].id;
+    	long secondId = asteroids[asteroids.length - 1].id;
     	for(int i = asteroids.length - 1; i >= 0; i--){
     		if(half >= sum / 2){
-    			return ret;
+    			break;
     		}
     		half += asteroids[i].mass;
     		ret.add(asteroids[i].id);
     		secondId = asteroids[i].id;
     	}
-    	threshold = Math.abs(indexMap.get(firstId).orbit.a - indexMap.get(secondId).orbit.a) / (ret.size() - 1);
+    	clusterThreshold = Math.abs(indexMap.get(firstId).orbit.a - indexMap.get(secondId).orbit.a) / (ret.size() - 1);
     	return ret;	
-    }
-    private double numberOfClusters(Asteroid[] asteroids)
-    {
-        double clusters = asteroids.length;
-        for (Asteroid a1: asteroids) {
-            double nearbyAsteroids = 0;
-            for(Asteroid a2: asteroids) {
-                if(a1.id != a2.id) {
-                    //distance between them less than some threshold
-                    //if(Math.abs(a1.orbit.a - a2.orbit.a) < ) {
-                    	nearbyAsteroids++;
-                    //}
-                }
-            }
-            clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
-        }
-        return clusters;
     }
     
     private void tryToCollideOutside(Asteroid[] asteroids, double[] energy, double[] direction){	
