@@ -29,7 +29,7 @@ public class Player implements pb.sim.Player {
     private Point origin = new Point(0,0);
 
     // time until next push
-    private HashMap<Integer, Long> time_of_push;
+    private HashMap<Integer, Push> time_of_push;
 
     // number of retries
     private int retries_per_turn = 1;
@@ -43,7 +43,7 @@ public class Player implements pb.sim.Player {
   //key is the id of ast, value is the index of ast
     private HashMap<Long, Integer> indexHashMap; 
     private double clusterThreshold;
-    private HashMap<Integer, Boolean> pushAgain;
+//    private HashMap<Integer, Boolean> pushAgain;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -55,11 +55,11 @@ public class Player implements pb.sim.Player {
 
         refreshIndexMap(asteroids);
         reorderCluster(asteroids);
-        time_of_push = new HashMap<Integer, Long>();
+        time_of_push = new HashMap<Integer, Push>();
         for(int i=0; i < cluster_number; i++) {
-        	time_of_push.put(i, 0l);
+        	time_of_push.put(i, null);
         }
-        pushAgain = new HashMap<Integer, Boolean>();
+//        pushAgain = new HashMap<Integer, Boolean>();
         System.out.println("Initialization done!");
     }
 
@@ -152,13 +152,22 @@ public class Player implements pb.sim.Player {
         // if not yet time to push do nothing
         updateClusters(asteroids);
         int count = 0;
-        for(int i = 0; i < cluster_number; i++){
-        	if(time <= time_of_push.get(i)){
-        		pushAgain.put(i, false);
-        		count++;
-        	}else{
-        		pushAgain.put(i, true);
-        	}
+        Set<Integer> keys = time_of_push.keySet();
+        for(Integer key: keys) {
+            Push push = time_of_push.get(key);
+            if(push == null) {
+                continue;
+            }
+            count++;
+            int index = indexHashMap.get(push.asteroid_id);
+            if(push.time_of_push == time) {
+                energy[index] = push.energy;
+                direction[index] = push.direction;
+            } else if(push.time_of_collision == time) {
+                // TODO: work on this
+//                calculateCircularPush();
+                time_of_push.put(key, null);
+            }
         }
         if(count == cluster_number){
         	return;
@@ -476,9 +485,12 @@ public class Player implements pb.sim.Player {
     	List<Long> ids = new ArrayList<Long>();
 
     	Point origin = new Point(0, 0);
+        System.out.println(asteroidClusters);
+        System.out.println(cluster_number);
     	for(int i = 0; i < cluster_number; i++){
-    		if(!pushAgain.get(i))
-    			continue;
+            if(time_of_push.get(i) != null) {
+                continue;
+            }
     		ids = asteroidClusters.get(i);
     		Collections.sort(ids, new Comparator<Long>() {
 				@Override
@@ -499,19 +511,23 @@ public class Player implements pb.sim.Player {
     		//loop within this cluster
     		if(size == 1){
     			//TODO push it to the next cluster
+                System.out.println("There is only 1");
     		}else{
-	    		//TODO 
+	    		//TODO
+                System.out.println("There are multiple too!");
     			Asteroid a1 = indexMap.get(ids.get(0));
     			for(int j = 1; j < ids.size(); j++){
     				Asteroid a2 = indexMap.get(ids.get(j));
     				Push push = calculateFirstPush(a1, a2, 356 * 40);
 	    			if(push != null){
 	    				System.out.println("Real push");
-	    				direction[push.asteroid_id] = push.direction;
-	    				energy[push.asteroid_id] = push.energy;
+                        // do this at the time of push, not immdiately
+//	    				direction[push.asteroid_id] = push.direction;
+//	    				energy[push.asteroid_id] = push.energy;
 	    				System.out.println(push.energy);
-	    				time_of_push.put(i, push.time_of_push);
-	    				continue;
+                        System.out.println(push.time_of_push);
+	    				time_of_push.put(i, push);
+	    				break;
 	    			}
 	    			//push it to the near outside one
 	    		}
@@ -555,6 +571,7 @@ public class Player implements pb.sim.Player {
 	    		direction = theta1;
 	    		time_push = time + ft;
 	    		//the first parameter is the index
+                System.out.println("adding new push");
 	    		return new Push(indexHashMap.get(a1.id), energy, direction, time_push);
 	    	}
     	}
