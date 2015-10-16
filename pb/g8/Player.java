@@ -56,6 +56,9 @@ public class Player implements pb.sim.Player {
         refreshIndexMap(asteroids);
         reorderCluster(asteroids);
         time_of_push = new HashMap<Integer, Long>();
+        for(int i=0; i < cluster_number; i++) {
+        	time_of_push.put(i, 0l);
+        }
         pushAgain = new HashMap<Integer, Boolean>();
         System.out.println("Initialization done!");
     }
@@ -65,6 +68,7 @@ public class Player implements pb.sim.Player {
         int clusterCount = numberOfClusters(relevantAsteroidIds);
         System.err.println(clusterCount);
         asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
+        cluster_number = asteroidClusters.size()-1;
     }
 
    
@@ -143,14 +147,17 @@ public class Player implements pb.sim.Player {
     // try to push asteroid
     public void play(Asteroid[] asteroids, double[] energy, double[] direction) 
     {
+    	time++;
     	refreshIndexMap(asteroids);
         // if not yet time to push do nothing
         updateClusters(asteroids);
         int count = 0;
         for(int i = 0; i < cluster_number; i++){
-        	if(++time <= time_of_push.get(i)){
+        	if(time <= time_of_push.get(i)){
         		pushAgain.put(i, false);
         		count++;
+        	}else{
+        		pushAgain.put(i, true);
         	}
         }
         if(count == cluster_number){
@@ -487,8 +494,10 @@ public class Player implements pb.sim.Player {
 				}
 			});
     		int size = ids.size();
-    		if(ids.size() == 0)
+    		if(ids.size() == 0) {
+    			System.out.println("continuing because size is zero");
     			continue;
+    		}
     		
     		//loop within this cluster
     		if(size == 1){
@@ -497,11 +506,13 @@ public class Player implements pb.sim.Player {
 	    		//TODO 
     			Asteroid a1 = indexMap.get(ids.get(0));
     			for(int j = 1; j < ids.size(); j++){
-	    			Asteroid a2 = indexMap.get(ids.get(j));
-	    			Push push = calculateFirstPush(a1, a2, 356 * 40);
+    				Asteroid a2 = indexMap.get(ids.get(j));
+    				Push push = calculateFirstPush(a1, a2, 356 * 40);
 	    			if(push != null){
+	    				System.out.println("Real push");
 	    				direction[push.asteroid_id] = push.direction;
 	    				energy[push.asteroid_id] = push.energy;
+	    				System.out.println(push.energy);
 	    				time_of_push.put(i, push.time_of_push);
 	    				continue;
 	    			}
@@ -524,9 +535,10 @@ public class Player implements pb.sim.Player {
     private Push calculateFirstPush(Asteroid a1, Asteroid a2, long t){
     	double r1 = a1.orbit.a;
     	double r2 = a2.orbit.a;
-    	double vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / r1 + r2) - 1);
+    	double vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
     	double direction = Double.MAX_VALUE;
     	double energy = 0.5*a1.mass * vnew * vnew;
+//    	System.out.println("Energy:" + energy);
     	long time_push = Long.MAX_VALUE;
     	
     	for(long ft = 0; ft < t; ft++) {
@@ -541,6 +553,8 @@ public class Player implements pb.sim.Player {
 	    	double omega2 = Math.sqrt(Orbit.GM / Math.pow(r2, 3));
 	    	
 	    	if(Math.abs(theta1 + Math.PI - theta2 - timeH*omega2) < thresh/2) {
+	    		System.out.println("Energy:" + energy);
+	    		System.out.println("Above energy tried to be pushed");
 	    		direction = theta1;
 	    		time_push = time + ft;
 	    		//the first parameter is the index
