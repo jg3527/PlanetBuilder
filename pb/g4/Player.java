@@ -11,6 +11,7 @@ import java.util.*;
 public class Player implements pb.sim.Player{
 	// used to PIck asteroid and velocity boost randomly
 	private Random random = new Random();
+	private Point sun = new Point(0, 0);
 
 	// current time, time limit
 	private long time = -1;
@@ -34,7 +35,7 @@ public class Player implements pb.sim.Player{
 	private Set<Asteroid> asteroidOrder;
 	private double fifty_percent_mass;
 
-	private int num_closest_asteroids = 5;
+	private int num_closest_asteroids = 4;
 	private int initial_number_of_asteroids;
 
 	//stores asteroid masses
@@ -47,18 +48,17 @@ public class Player implements pb.sim.Player{
 		asteroidOrder = new HashSet<Asteroid>();
 		storeMass(asteroids);
 		System.out.println("Init");
-		dynamicProgramming(asteroids);
+		// dynamicProgramming(asteroids);
 		System.out.println(asteroidOrder.size());
-		for(Asteroid a: asteroidOrder)
-		{
+		for(Asteroid a: asteroidOrder) {
 			System.out.println(a.mass);
 		}
 		if (Orbit.dt() != 24 * 60 * 60)
 			throw new IllegalStateException("Time quantum is not a day");
 		this.time_limit = time_limit;
 	}
-	public void storeMass(Asteroid[] asteroids)
-	{
+
+	public void storeMass(Asteroid[] asteroids) {
 		double mass_sum = 0;
 		for(Asteroid asteroid: asteroids)
 		{
@@ -70,8 +70,7 @@ public class Player implements pb.sim.Player{
 		System.out.println("50% mass: " + fifty_percent_mass);
 	} 
 
-	public void updateMass(Asteroid asteroid1, Asteroid asteroid2, Asteroid[] asteroids)
-	{
+	public void updateMass(Asteroid asteroid1, Asteroid asteroid2, Asteroid[] asteroids) {
 		cached_asteroid_masses.remove(asteroid1);
 		cached_asteroid_masses.remove(asteroid2);
 		for(Asteroid asteroid: asteroids)
@@ -83,104 +82,17 @@ public class Player implements pb.sim.Player{
 		}
 	} 
 
-	private void printMassVelocity(Asteroid[] asteroids)
-	{
-		for(Asteroid asteroid: asteroids)
-		{
+	private void printMassVelocity(Asteroid[] asteroids) {
+		for (Asteroid asteroid: asteroids) {
 			System.out.println("mass, velocity:" + asteroid.mass + ", " + asteroid.orbit.velocityAt(time));
 		}
-
-	}
-
-	public void dynamicProgramming(Asteroid[] asteroids)
-	{
-		System.out.println("Starting Dynamic Programming");
-		ArrayList<Double> masses = new ArrayList<Double>(); //exp
-		ArrayList<Double> energies = new ArrayList<Double>(); //stam
-		masses.add(0.0);
-		energies.add(0.0);
-		for(double i = Math.pow(10, 35); i <= Math.pow(10, 39); i += Math.pow(10,35))
-		{
-			boolean write = false;
-			for(int j = 0; j < asteroids.length; j++)
-			{
-				Point v = asteroids[j].orbit.velocityAt(time);
-				Double velocity = Math.sqrt(v.x * v.x + v.y * v.y);
-				Double mass = asteroids[j].mass;
-				Double energy = 0.5* mass * velocity * velocity;
-				// System.out.println("energy: " + energy);
-				if(energy >= i && energy < (i + Math.pow(10, 35)))
-				{
-					masses.add(asteroids[j].mass);
-					energies.add(energy);
-					write = true;
-				}
-			}
-			if (write == false)
-			{
-				masses.add(0.0);
-				energies.add(0.0);
-			}
-		}
-		optimize(masses, asteroids);
-	}
-	public void optimize(ArrayList<Double> mass, Asteroid[] asteroids)
-	{
-		System.out.println("Optimizing");
-		ArrayList<Double> r = new ArrayList<Double>();
-		String results = null;
-		ArrayList<String[]> r1 = new ArrayList<String[]>();
-		Set<Asteroid> r2 = new HashSet<Asteroid>();
-		ArrayList<String> r3 = new ArrayList<String>();
-		for(double i: mass)
-		{
-			r3.add("0");
-			r.add(0.0);
-		}
-		for (int i = 0; i < mass.size(); i++)
-		{
-			double q = 0.0;
-			String q1 = "0 0 0";
-			for (int j = 0; j <= i; j++ )
-			{
-				if(q < (mass.get(j) + r.get(i-j)))
-				{
-					q =  mass.get(j) + r.get(i-j);
-					q1 = mass.get(j)+ " " + r3.get(i-j);
-					if( mass.get(j)!= 0 && r.get(i-j)!=0)
-					{
-						results = mass.get(j) + " " + r.get(i-j) + " " + q + "\n";
-						r1.add(results.split(" "));
-					}
-				}
-			}
-			r.set(i,q);
-			r3.set(i,q1);
-		}
-		String[] last = r3.get(r3.size()-1).split(" ");
-		for(int k = 0; k < asteroids.length; k++)
-		{
-			for(int j = 0; j < last.length; j++)
-			{
-				if(Double.parseDouble(last[j]) == asteroids[k].mass)
-				{
-					r2.add(asteroids[k]);
-				}
-			}
-		}
-		asteroidOrder = r2;
 	}
 
 	// try to push asteroid
 	public void play(Asteroid[] asteroids,
-		double[] energy, double[] direction)
-	{
+		double[] energy, double[] direction) {
 		num_closest_asteroids = Math.min(num_closest_asteroids, asteroids.length - 1);
 		if (++time%10 == 0 && time > collisionTime) {
-			// if(cached_asteroid_masses.size() < asteroids.length && indexToPush != -1 && indexToHit != -1)
-			// {
-			// 	updateMass(furthestFromSun, closerToSun, asteroids);
-			// }
 			push_closest_to_largest(asteroids, energy, direction);
 		}
 	}
@@ -200,46 +112,19 @@ public class Player implements pb.sim.Player{
 		return idx;
 	}
 
-	public void perturb(Asteroid[] asteroids, double[] energy, double[] direction)
-	{
-		Asteroid a1;
-		//It's been a long time since a push, so perturb the system
-		if (timeSincePush > 7300) {
-			boolean validOrbitNotFound = true;
-			while (validOrbitNotFound) {
-				int i = random.nextInt(asteroids.length);
-				Point v = asteroids[i].orbit.velocityAt(time);
-				// add 5-50% of current velocity in magnitude
-				double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
-				double v2 = v1 * (random.nextDouble() * 0.45 + 0.05);
-				// apply push at -π/8 to π/8 of current angle
-				double d1 = Math.atan2(v.y, v.x);
-				double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
-				// compute energy
-				double E = 0.5 * asteroids[i].mass * v2 * v2;
-				try {
-					a1 = Asteroid.push(asteroids[i], time, E, d2);
-					validOrbitNotFound = false;
-				} catch (InvalidOrbitException e) {
-					System.out.println("  Invalid orbit: " + e.getMessage());
-					validOrbitNotFound = false;
-					continue;
-				}
-				energy[i] = E;
-				direction[i] = d2;
-			}
-		}
-	}
-
 	public void push_closest_to_largest(Asteroid[] asteroids, double[] energy, double[] direction)
 	{
+		if (time % 300 == 0) {
+			System.out.println("Year: " + time / 365);
+		}
 		PriorityQueue<Asteroid> heap = new PriorityQueue<Asteroid>(asteroids.length, new AsteroidComparator());
 		int largest_asteroid_idx = findLargestAsteroidIndex(asteroids);
 		double min = Double.MAX_VALUE;
 		int minIndex = -1;
 		// if not yet time to push do nothing
 		largest_asteroid = asteroids[largest_asteroid_idx];
-		Point aPoint = largest_asteroid.orbit.positionAt(time);
+		Point largestAsteroidPosition = largest_asteroid.orbit.positionAt(time);
+		double largestAsteroidDistFromSun = Point.distance(largestAsteroidPosition, sun);
 
 		for (int i = 0; i < asteroids.length; i++) {
 			if (i != largest_asteroid_idx) 
@@ -252,33 +137,42 @@ public class Player implements pb.sim.Player{
 
 		for (int i = 0; i < num_closest_asteroids; i++) {
 			Asteroid other_asteroid = heap.poll();
-
-			Point origin = new Point(0, 0);
-			Point largest = largest_asteroid.orbit.positionAt(time);
 			Point closest = other_asteroid.orbit.positionAt(time);
+			Point v = other_asteroid.orbit.velocityAt(time);
+			double distBetweenPointAndSun = Point.distance(closest, sun);
+			double pushAngle;
+
+			// if (distBetweenPointAndSun > largestAsteroidDistFromSun) {
+			// 	pushAngle = Math.atan2(v.x, -v.y);
+			// }
+			// else {
+			// 	pushAngle = Math.atan2(v.x, -v.y);
+			// }
 
 			double mass = other_asteroid.mass;
-			double arc = Math.atan2(closest.x - largest.x, closest.y - largest.y);
+			double arc = Math.atan2(closest.x - largestAsteroidPosition.x, 
+				closest.y - largestAsteroidPosition.y);
 
-			Point v = other_asteroid.orbit.velocityAt(time);
 			// add 5-50% of current velocity in magnitude
 			double v1 = Math.sqrt(v.x * v.x + v.y * v.y);
-			double v2 = v1 * 0.2 + 0.05;
+			double v2 = v1 * 0.20 + 0.05;
+			collisionTime = time;
 
-			int loopCount = 0;
-			for (double angle = arc - Math.PI/9; angle < arc + Math.PI/9; angle += Math.PI/36) {
-				for (double velocity = v2; velocity < 0.5 * v1; velocity += v2 * 0.10) {
+			for (pushAngle = arc - Math.PI/18; pushAngle < arc + Math.PI/18; pushAngle += Math.PI/36) {
+				for (double velocity = v2; velocity < 0.4 * v1; velocity += v2 * 0.05) {
 					double pushEnergy = 0.05 * mass * velocity * velocity * 0.5;
-					loopCount++;
-					if (prediction(other_asteroid, largest_asteroid, time, pushEnergy, angle)) {
-						System.out.println("collision " + " at energy: "
-							+ pushEnergy + " and direction: " + angle + " at year: " + time / 365);
+					long predictedTimeOfCollission = prediction(other_asteroid, largest_asteroid, 
+						time, pushEnergy, pushAngle);
+					if (predictedTimeOfCollission > 0) {
+						System.out.println("collision predicted" + " at energy: "
+							+ pushEnergy + " and direction: " + pushAngle + " at year: " + time / 365);
 						timeSincePush = 0;
 
 						if (pushEnergy < leastEnergy) {
+							collisionTime = predictedTimeOfCollission;
 							lowestEnergyAsteroid = other_asteroid;
 							leastEnergy = pushEnergy;
-							bestAngle = angle;
+							bestAngle = pushAngle;
 						}
 					}
 				}
@@ -299,7 +193,7 @@ public class Player implements pb.sim.Player{
 		direction[indexToPush] = bestAngle;
 	}
 
-	public boolean prediction(Asteroid source, Asteroid target, long time, double energy, 
+	public long prediction(Asteroid source, Asteroid target, long time, double energy, 
 		double direction) {
 		try {
 			source = Asteroid.push(source, time, energy, direction);
@@ -313,7 +207,7 @@ public class Player implements pb.sim.Player{
 		Point p2 = new Point();
 		double r = source.radius() + target.radius();
 			// look 10 years in the future for collision
-		for (long ft = 0 ; ft != 3650; ++ft) {
+		for (long ft = 0 ; ft != 3650 / 2; ++ft) {
 			long t = time + ft;
 			if (t >= time_limit) 
 				break;
@@ -322,10 +216,10 @@ public class Player implements pb.sim.Player{
 				// if collision, return push to the simulator
 			if (Point.distance(p1, p2) < r) {
 				collisionTime = t;
-				return true;
+				return t;
 			}
 		}
-		return false;
+		return -1;
 	}
 
 	public class AsteroidComparator implements Comparator<Asteroid> {
