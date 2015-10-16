@@ -68,7 +68,7 @@ public class Player implements pb.sim.Player {
         int clusterCount = numberOfClusters(relevantAsteroidIds);
         System.err.println(clusterCount);
         asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
-        cluster_number = asteroidClusters.size()-1;
+        cluster_number = asteroidClusters.size() - 1;
     }
 
    
@@ -326,8 +326,8 @@ public class Player implements pb.sim.Player {
         }
         return index;
     }
-/*
-    public boolean willCollide(Asteroid a11, Asteroid a22, long timeInterval,Point p1, Point p2)
+
+    public long calCollisionTime(Asteroid a11, Asteroid a22, long timeInterval,Point p1, Point p2)
     {    	
     	Asteroid a1, a2;
         //Make sure a1 is always the one has bigger period to short the loop time
@@ -348,9 +348,8 @@ public class Player implements pb.sim.Player {
         a2.orbit.positionAt(time - a2.epoch, p2);
         if(willOverlap(p1, a1.radius(), p2, a2.radius()))
         {
-            debug("overlap ***********");
-            time_of_push = time + 2;
-            return true;
+            debug("overlap now");
+            return time + 1;
         }
 
         for(int i = 0; i < cts.size(); i++)
@@ -367,18 +366,16 @@ public class Player implements pb.sim.Player {
                     if(willOverlap(p1, a1.radius(), p2, a2.radius()))
                     {
                     	debug("will overlap");
-	                    	time_of_push = t + 1;
-	                        return true;
+	                    return t;
                     }
                 }
                 startTime = startTime + a1.orbit.period();
                 endTime = endTime + a1.orbit.period();
             }
         }
-        return false;
+        return -1;
 
     }
-*/
     public boolean willOverlap(Point p1, double r1, Point p2, double r2)
     {
         double distance = Point.distance(p1, p2);
