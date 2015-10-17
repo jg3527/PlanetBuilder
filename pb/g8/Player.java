@@ -163,8 +163,10 @@ public class Player implements pb.sim.Player {
             int index = indexHashMap.get(push.asteroid_id);
 //            System.out.println("time of push is: " + push.time_of_push);
             if(push.time_of_push == time) {
+            	System.out.println("aha pushing");
                 energy[index] = push.energy;
                 direction[index] = push.direction;
+       
             } else if(push.time_of_collision == time) {
                 // TODO: work on this
 //                calculateCircularPush();
@@ -180,7 +182,8 @@ public class Player implements pb.sim.Player {
         //System.out.println("Day: "  + (1 + time % 365));
         List<Push> pushes = new ArrayList<Push>();
         //============================================
-        tryToCollideOutside(asteroids, direction, energy);
+        tryToCollideOutside(asteroids, energy, direction);
+        System.out.println(time_of_push);
         
         //============================================
         
@@ -439,7 +442,7 @@ public class Player implements pb.sim.Player {
     	double r2 = a2.orbit.a;
     	double vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
     	double dir = Double.MAX_VALUE;
-    	double ene = 0.5*a1.mass * vnew * vnew;
+    	double ene = 0.5 * a1.mass * vnew * vnew;
 //    	System.out.println("Energy:" + energy);
     	long time_push = Long.MAX_VALUE;
     	
@@ -458,14 +461,13 @@ public class Player implements pb.sim.Player {
 	    		System.out.println("Energy:" + ene);
 	    		System.out.println("Above energy tried to be pushed");
 	    		dir = theta1;
-                System.out.println("time: " + time_push);
                 System.out.println("ft: " + ft);
 	    		time_push = time + ft;
 	    		System.out.println("time_push: " + time_push);
 	    		double timeDouble = Math.PI * Math.sqrt(Math.pow((r1 + r2), 3) / (8 * Orbit.GM));
 	    		//the first parameter is the index
                 System.out.println("adding new push");
-                long time_of_collision = (new Double(timeDouble)).longValue();
+                long time_of_collision = (new Double(timeDouble)).longValue() + time + ft;
                 if(ft == 0) {
                     int index = indexHashMap.get(a1.id);
                     System.out.println("index:" + index);
