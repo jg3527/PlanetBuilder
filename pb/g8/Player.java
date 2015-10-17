@@ -39,9 +39,9 @@ public class Player implements pb.sim.Player {
     private HashMap<Integer, List<Long>> asteroidClusters;
     private int cluster_number = 0;
     
-    private HashMap<Long, Asteroid> indexMap;
+    private HashMap<Long, Asteroid> asteroidMap;
   //key is the id of ast, value is the index of ast
-    private HashMap<Long, Integer> indexHashMap; 
+    private HashMap<Long, Integer> asteroidIndexMap;
     private double clusterThreshold;
 //    private HashMap<Integer, Boolean> pushAgain;
 
@@ -82,7 +82,7 @@ public class Player implements pb.sim.Player {
             for (Instance instance : clusters[ii]) {
                 // gets asteroid associated with the instance
                 for(Long asteroidId: relevantAsteroidIds) {
-                    Asteroid asteroid = indexMap.get(asteroidId);
+                    Asteroid asteroid = asteroidMap.get(asteroidId);
                     if (asteroid.orbit.a == instance.value(0)) {
                         asteroidIds.add(asteroid.id);
                     }
@@ -91,7 +91,7 @@ public class Player implements pb.sim.Player {
             result.put(ii, asteroidIds);
         }
         // add all asteroids that we don't want to consider in cluster -1
-        Set<Long> remainingAsteroidIds = indexMap.keySet();
+        Set<Long> remainingAsteroidIds = asteroidMap.keySet();
         remainingAsteroidIds.removeAll(relevantAsteroidIds);
         result.put(-1, new ArrayList<Long>(remainingAsteroidIds));
         return result;
@@ -110,7 +110,7 @@ public class Player implements pb.sim.Player {
         Dataset data = new DefaultDataset();
         // create instances and populate the data set
         for(Long asteroidId: relevantAsteroidIds) {
-            Asteroid asteroid = indexMap.get(asteroidId);
+            Asteroid asteroid = asteroidMap.get(asteroidId);
             Instance instance = new DenseInstance(new double[] {asteroid.orbit.a});
             data.add(instance);
         }
@@ -130,10 +130,10 @@ public class Player implements pb.sim.Player {
         double clusters = relevantAsteroidIds.size();
         for (Long id1: relevantAsteroidIds) {
             double nearbyAsteroids = 0;
-            Asteroid a1 = indexMap.get(id1);
+            Asteroid a1 = asteroidMap.get(id1);
             for (Long id2: relevantAsteroidIds) {
                 if (id1.longValue() != id2.longValue()) {
-                    Asteroid a2 = indexMap.get(id2);
+                    Asteroid a2 = asteroidMap.get(id2);
                     if(Math.abs(a1.orbit.a - a2.orbit.a) < clusterThreshold) {
                         nearbyAsteroids++;
                     }
@@ -160,8 +160,8 @@ public class Player implements pb.sim.Player {
                 continue;
             }
             count++;
-            if(indexHashMap.containsKey(push.asteroid_id)) {
-                int index = indexHashMap.get(push.asteroid_id);
+            if(asteroidIndexMap.containsKey(push.asteroid_id)) {
+                int index = asteroidIndexMap.get(push.asteroid_id);
 //            System.out.println("time of push is: " + push.time_of_push);
                 if (push.time_of_push == time) {
                     System.out.println("aha pushing");
@@ -228,6 +228,12 @@ public class Player implements pb.sim.Player {
                 }
             }
         }
+        for(Long id: newAsteroidIds) {
+            Asteroid newAsteroid = asteroidMap.get(id);
+            if(newAsteroid.orbit.a != newAsteroid.orbit.b) {
+//                calculateCircularPush(newAsteroid);
+            }
+        }
         // if more than 1 new asteroid, reorder and return
         // make new asteroids circular
         if(newAsteroidIds.size() != 1) {
@@ -238,23 +244,27 @@ public class Player implements pb.sim.Player {
             newId = id;
         }
         // remove the asteroids from the cluster
-        List<Long> newAsteroidIdsForCluster = new ArrayList<Long>();
-        for(Long id: asteroidClusters.get(clusterId)) {
-            if(!idsToRemove.contains(id)) {
-                newAsteroidIdsForCluster.add(id);
+        HashMap<Integer, List<Long>> newAsteroidCluster = new HashMap<Integer, List<Long>>();
+        for(Map.Entry<Integer, List<Long>> entry: asteroidClusters.entrySet()) {
+            List<Long> newAsteroidIdsForCluster = new ArrayList<Long>();
+            for (Long id : entry.getValue()) {
+                if (!idsToRemove.contains(id)) {
+                    newAsteroidIdsForCluster.add(id);
+                }
             }
+            newAsteroidCluster.put(entry.getKey(), newAsteroidIdsForCluster);
         }
-        asteroidClusters.put(clusterId, newAsteroidIdsForCluster);
+        asteroidClusters = newAsteroidCluster;
         // add new id to the cluster
-        asteroidClusters.get(clusterId).add(indexMap.get(newId).id);
+        asteroidClusters.get(clusterId).add(newId);
         }
 
     private long getClosestAsteroid(List<Long> asteroidIds) {
     	long min = asteroidIds.get(0);
     	for(Long asteroidId: asteroidIds)
     	{
-    		Asteroid a = indexMap.get(asteroidId);
-    		if(a.orbit.a < indexMap.get(min).orbit.a)
+    		Asteroid a = asteroidMap.get(asteroidId);
+    		if(a.orbit.a < asteroidMap.get(min).orbit.a)
     			min = a.id;
     	}
     	return min;
@@ -386,7 +396,7 @@ public class Player implements pb.sim.Player {
     		ret.add(asteroids[i].id);
     		secondId = asteroids[i].id;
     	}
-    	clusterThreshold = Math.abs(indexMap.get(firstId).orbit.a - indexMap.get(secondId).orbit.a) / (ret.size() - 1);
+    	clusterThreshold = Math.abs(asteroidMap.get(firstId).orbit.a - asteroidMap.get(secondId).orbit.a) / (ret.size() - 1);
     	return ret;	
     }
     
@@ -408,8 +418,8 @@ public class Player implements pb.sim.Player {
     		Collections.sort(ids, new Comparator<Long>() {
 				@Override
 				public int compare(Long l1, Long l2) {
-					Asteroid a1 = indexMap.get(l1);
-					Asteroid a2 = indexMap.get(l2);
+					Asteroid a1 = asteroidMap.get(l1);
+					Asteroid a2 = asteroidMap.get(l2);
 					double d1 = Point.distance(origin, a1.orbit.positionAt(time - a1.epoch));
 					double d2 = Point.distance(origin, a2.orbit.positionAt(time - a2.epoch));
 					return (int)(d1 - d2);
@@ -449,11 +459,11 @@ public class Player implements pb.sim.Player {
     	}
     }
     private void refreshIndexMap(Asteroid[] asteroids){
-    	indexMap = new HashMap<Long, Asteroid>();
-    	indexHashMap = new HashMap<Long, Integer>();
+        asteroidMap = new HashMap<Long, Asteroid>();
+        asteroidIndexMap = new HashMap<Long, Integer>();
     	for(int i = 0; i < asteroids.length; i++){
-    		indexMap.put(asteroids[i].id, asteroids[i]);
-    		indexHashMap.put(asteroids[i].id, i);
+            asteroidMap.put(asteroids[i].id, asteroids[i]);
+            asteroidIndexMap.put(asteroids[i].id, i);
     	}
     }
     
@@ -489,7 +499,7 @@ public class Player implements pb.sim.Player {
             System.out.println(timeH);
             System.out.println(time_of_collision_2);
 //            if(time_of_collision < t) {
-                int index = indexHashMap.get(a1.id);
+                int index = asteroidIndexMap.get(a1.id);
                 System.out.println("index:" + index);
                 energy[index] = E;
                 direction[index] = theta1;
