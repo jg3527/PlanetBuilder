@@ -261,50 +261,6 @@ public class Player implements pb.sim.Player {
         asteroidClusters.get(clusterId).add(newId);
         }
 
-    private long getClosestAsteroid(List<Long> asteroidIds) {
-    	long min = asteroidIds.get(0);
-    	for(Long asteroidId: asteroidIds)
-    	{
-    		Asteroid a = asteroidMap.get(asteroidId);
-    		if(a.orbit.a < asteroidMap.get(min).orbit.a)
-    			min = a.id;
-    	}
-    	return min;
-	}
-
-    public int getFarthestAsteroid(Asteroid[] asteroids)
-    {
-        int index = 0;
-        double maxDistance = 0;
-        Point point = new Point();
-        for(int aa = 0; aa < asteroids.length; aa++) {
-            Asteroid a1 = asteroids[aa];
-            a1.orbit.positionAt(time - a1.epoch, point);
-            double distance = Point.distance(point, origin);
-            if(distance > maxDistance) {
-                maxDistance = distance;
-                index = aa;
-            }
-        }
-        return index;
-    }
-
-    public int getNearestAsteroid(Asteroid[] asteroids)
-    {
-        int index = 0;
-        double minDistance = Double.MAX_VALUE;
-        Point point = new Point();
-        for(int aa = 0; aa < asteroids.length; aa++) {
-            Asteroid a1 = asteroids[aa];
-            a1.orbit.positionAt(time - a1.epoch, point);
-            double distance = Point.distance(point, origin);
-            if(distance < minDistance) {
-                minDistance = distance;
-                index = aa;
-            }
-        }
-        return index;
-    }
 
     public boolean willOverlap(Point p1, double r1, Point p2, double r2)
     {
@@ -354,28 +310,6 @@ public class Player implements pb.sim.Player {
         //System.out.print("debug: " + str + "\n");
     }
 
-    private int getLightestAsteroid(Asteroid asteroids[]) 
-    {
-        int min = 1;
-        for (int i = 0; i < asteroids.length; i++)
-        {
-            if (asteroids[i].mass < asteroids[min].mass)
-                min = i;
-        }
-        return min;
-    }
-
-    private int getHeaviestAsteroid(Asteroid asteroids[])
-    {
-        int max = 1;
-        for (int i = 0; i < asteroids.length; i++)
-        {
-            if (asteroids[i].mass > asteroids[max].mass)
-                max = i;
-        }
-        return max;
-    }
-
     private Set<Long> getOutersidePart(Asteroid[] asteroids){
     	Set<Long> ret = new HashSet<Long>();
     	Arrays.sort(asteroids, new Comparator<Asteroid>() {
@@ -408,8 +342,6 @@ public class Player implements pb.sim.Player {
     	Point origin = new Point(0, 0);
 //        System.out.println("clusters: " + asteroidClusters);
 //        System.out.println("cluster number: " + cluster_number);
-        int farthestAsteroid = getFarthestAsteroid(asteroids);
-        int nearestAsteroid = getNearestAsteroid(asteroids);
     	for(int i = 0; i < cluster_number; i++){
     		debug("i: " + i);
             if(time_of_push.get(i) != null) {
@@ -440,11 +372,9 @@ public class Player implements pb.sim.Player {
     		}else{
 	    		//TODO
 //                System.out.println("There are multiple too!");
-//                Asteroid a1 = indexMap.get(ids.get(0));
-                Asteroid a1 = asteroids[nearestAsteroid];
+                Asteroid a1 = asteroidMap.get(ids.get(0));
     			for(int j = 1; j < ids.size(); j++){
-//                    Asteroid a2 = indexMap.get(ids.get(j));
-                    Asteroid a2 = asteroids[farthestAsteroid];
+                    Asteroid a2 = asteroidMap.get(ids.get(j));
     				Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
 	    			if(push != null){
 	    				System.out.println("Real push");
