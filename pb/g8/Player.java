@@ -42,8 +42,8 @@ public class Player implements pb.sim.Player {
     private HashMap<Long, Asteroid> asteroidMap;
   //key is the id of ast, value is the index of ast
     private HashMap<Long, Integer> asteroidIndexMap;
+    private Set<Long> asteroidsForCircularPush;
     private double clusterThreshold;
-//    private HashMap<Integer, Boolean> pushAgain;
 
     // print orbital information
     public void init(Asteroid[] asteroids, long time_limit) 
@@ -70,8 +70,6 @@ public class Player implements pb.sim.Player {
         asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
         cluster_number = asteroidClusters.size() - 1;
     }
-
-   
 
     private HashMap<Integer, List<Long>> getAsteroidClusters(Set<Long> relevantAsteroidIds, int clusterCount) {
         // gets the clusters for the provided dataset
@@ -149,8 +147,6 @@ public class Player implements pb.sim.Player {
     {
     	time++;
     	refreshIndexMap(asteroids);
-    	//System.out.println(time_of_push);
-        // if not yet time to push do nothing
         updateClusters(asteroids);
         int count = 0;
         Set<Integer> keys = time_of_push.keySet();
@@ -172,6 +168,12 @@ public class Player implements pb.sim.Player {
             } else {
                 time_of_push.put(key, null);
             }
+        }
+        for(Long asteroidId: asteroidsForCircularPush) {
+            circularPush(asteroidMap.get(asteroidId), energy, direction);
+        }
+        if(asteroidsForCircularPush.size() > 0) {
+            return;
         }
         if(count == cluster_number){
         	return;
@@ -231,7 +233,7 @@ public class Player implements pb.sim.Player {
         for(Long id: newAsteroidIds) {
             Asteroid newAsteroid = asteroidMap.get(id);
             if(newAsteroid.orbit.a != newAsteroid.orbit.b) {
-//                calculateCircularPush(newAsteroid);
+                asteroidsForCircularPush.add(newAsteroid.id);
             }
         }
         // if more than 1 new asteroid, reorder and return
@@ -465,6 +467,7 @@ public class Player implements pb.sim.Player {
             asteroidMap.put(asteroids[i].id, asteroids[i]);
             asteroidIndexMap.put(asteroids[i].id, i);
     	}
+        asteroidsForCircularPush = new HashSet<Long>();
     }
     
 
@@ -508,7 +511,22 @@ public class Player implements pb.sim.Player {
         }
     	return null;
     }
-  
+
+    //make the asteroid circular again
+    private void circularPush(Asteroid a, double[] energy, double[] direction){
+        Point location = a.orbit.positionAt(time - a.epoch);
+        Point velocity = a.orbit.velocityAt(time - a.epoch);
+        double distance = Point.distance(location, origin);
+        double orbit_speed = Math.sqrt(Orbit.GM / distance);
+        double tangent_theta = Math.PI/2 + Math.atan2(location.y, location.x);
+        double normv2 = l2norm(velocity);
+        double theta2 = Math.atan2(velocity.y, velocity.x);
+        ArrayList<Double> parameters = calculatePush(normv2, theta2, orbit_speed, tangent_theta);
+        int index = asteroidIndexMap.get(a.id);
+        energy[index] = 0.5 * a.mass * Math.pow(parameters.get(0),2);
+        direction[index] = parameters.get(1);
+    }
+
     private ArrayList<Double> calculatePush(double speed, double angle, double targetSpeed, double targetAngle) {
     	double vx = speed * Math.cos(angle);
     	double vy = speed * Math.sin(angle);
