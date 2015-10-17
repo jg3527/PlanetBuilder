@@ -161,6 +161,7 @@ public class Player implements pb.sim.Player {
             }
             count++;
             int index = indexHashMap.get(push.asteroid_id);
+//            System.out.println("time of push is: " + push.time_of_push);
             if(push.time_of_push == time) {
                 energy[index] = push.energy;
                 direction[index] = push.direction;
@@ -372,8 +373,8 @@ public class Player implements pb.sim.Player {
     	List<Long> ids = new ArrayList<Long>();
 
     	Point origin = new Point(0, 0);
-        System.out.println("clusters: " + asteroidClusters);
-        System.out.println("cluster number: " + cluster_number);
+//        System.out.println("clusters: " + asteroidClusters);
+//        System.out.println("cluster number: " + cluster_number);
     	for(int i = 0; i < cluster_number; i++){
     		debug("i: " + i);
             if(time_of_push.get(i) != null) {
@@ -396,18 +397,18 @@ public class Player implements pb.sim.Player {
     			System.out.println("continuing because size is zero");
     			continue;
     		}
-    		System.out.println("cluster id: " + i + " size: " + size);
+//    		System.out.println("cluster id: " + i + " size: " + size);
     		//loop within this cluster
     		if(size == 1){
     			//TODO push it to the next cluster
                 System.out.println("There is only 1");
     		}else{
 	    		//TODO
-                System.out.println("There are multiple too!");
+//                System.out.println("There are multiple too!");
     			Asteroid a1 = indexMap.get(ids.get(0));
     			for(int j = 1; j < ids.size(); j++){
     				Asteroid a2 = indexMap.get(ids.get(j));
-    				Push push = calculateFirstPush(a1, a2, 356 * 40);
+    				Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
 	    			if(push != null){
 	    				System.out.println("Real push");
                         // do this at the time of push, not immdiately
@@ -433,19 +434,19 @@ public class Player implements pb.sim.Player {
     
 
     //Push a1 to a2
-    private Push calculateFirstPush(Asteroid a1, Asteroid a2, long t){
+    private Push calculateFirstPush(Asteroid a1, Asteroid a2, long t, double[] energy, double[] direction){
     	double r1 = a1.orbit.a;
     	double r2 = a2.orbit.a;
     	double vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
-    	double direction = Double.MAX_VALUE;
-    	double energy = 0.5*a1.mass * vnew * vnew;
+    	double dir = Double.MAX_VALUE;
+    	double ene = 0.5*a1.mass * vnew * vnew;
 //    	System.out.println("Energy:" + energy);
     	long time_push = Long.MAX_VALUE;
     	
     	for(long ft = 0; ft < t; ft++) {
 	    	Point v1 = a1.orbit.velocityAt(time + ft - a1.epoch);
 	    	
-	    	direction = Math.atan(v1.y / v1.x);
+	    	dir = Math.atan(v1.y / v1.x);
 	    	double theta1 = Math.atan2(v1.y, v1.x);
 	    	double timeH = Math.PI* Math.sqrt(Math.pow((r1 + r2), 3)/(8*Orbit.GM));
 	    	double thresh = a1.radius() + a2.radius();
@@ -454,16 +455,24 @@ public class Player implements pb.sim.Player {
 	    	double omega2 = Math.sqrt(Orbit.GM / Math.pow(r2, 3));
 	    	
 	    	if(Math.abs(theta1 + Math.PI - theta2 - timeH*omega2) < thresh/2) {
-	    		System.out.println("Energy:" + energy);
+	    		System.out.println("Energy:" + ene);
 	    		System.out.println("Above energy tried to be pushed");
-	    		direction = theta1;
+	    		dir = theta1;
+                System.out.println("time: " + time_push);
+                System.out.println("ft: " + ft);
 	    		time_push = time + ft;
 	    		System.out.println("time_push: " + time_push);
 	    		double timeDouble = Math.PI * Math.sqrt(Math.pow((r1 + r2), 3) / (8 * Orbit.GM));
 	    		//the first parameter is the index
                 System.out.println("adding new push");
                 long time_of_collision = (new Double(timeDouble)).longValue();
-	    		return new Push(indexHashMap.get(a1.id), energy, direction, time_push, time_of_collision);
+                if(ft == 0) {
+                    int index = indexHashMap.get(a1.id);
+                    System.out.println("index:" + index);
+                    energy[index] = ene;
+                    direction[index] = dir;
+                }
+                return new Push(a1.id, ene, dir, time_push, time_of_collision);
 	    	}
     	}
     	return null;
