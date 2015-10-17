@@ -160,16 +160,16 @@ public class Player implements pb.sim.Player {
                 continue;
             }
             count++;
-            int index = indexHashMap.get(push.asteroid_id);
+            if(indexHashMap.containsKey(push.asteroid_id)) {
+                int index = indexHashMap.get(push.asteroid_id);
 //            System.out.println("time of push is: " + push.time_of_push);
-            if(push.time_of_push == time) {
-            	System.out.println("aha pushing");
-                energy[index] = push.energy;
-                direction[index] = push.direction;
-       
-            } else if(push.time_of_collision == time) {
-                // TODO: work on this
-//                calculateCircularPush();
+                if (push.time_of_push == time) {
+                    System.out.println("aha pushing");
+                    energy[index] = push.energy;
+                    direction[index] = push.direction;
+
+                }
+            } else {
                 time_of_push.put(key, null);
             }
         }
@@ -229,6 +229,7 @@ public class Player implements pb.sim.Player {
             }
         }
         // if more than 1 new asteroid, reorder and return
+        // make new asteroids circular
         if(newAsteroidIds.size() != 1) {
             reorderCluster(asteroids);
             return;
