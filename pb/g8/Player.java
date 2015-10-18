@@ -66,7 +66,6 @@ public class Player implements pb.sim.Player {
 	private void reorderCluster(Asteroid[] asteroids) {
 		Set<Long> relevantAsteroidIds = getOutersidePart(asteroids);
 		int clusterCount = numberOfClusters(relevantAsteroidIds);
-		System.err.println(clusterCount);
 		asteroidClusters = getAsteroidClusters(relevantAsteroidIds, clusterCount);
 		cluster_number = asteroidClusters.size() - 1;
 		mergeOnlyOneAstCluster();
@@ -76,6 +75,12 @@ public class Player implements pb.sim.Player {
 		// gets the clusters for the provided dataset
 		Dataset[] clusters = computeClusters(relevantAsteroidIds, clusterCount);
 		HashMap<Integer, List<Long>> result = new HashMap<Integer, List<Long>>();
+		Arrays.sort(clusters, new Comparator<Dataset>() {
+			@Override
+			public int compare(Dataset o1, Dataset o2) {
+				return (int) (o1.get(0).value(0) - o2.get(0).value(0));
+			}
+		});
 		for(int ii = 0; ii < clusters.length; ii++) {
 			List<Long> asteroidIds = new ArrayList<Long>();
 			for (Instance instance : clusters[ii]) {
@@ -90,9 +95,10 @@ public class Player implements pb.sim.Player {
 			result.put(ii, asteroidIds);
 		}
 		// add all asteroids that we don't want to consider in cluster -1
-		Set<Long> remainingAsteroidIds = asteroidMap.keySet();
+		Set<Long> remainingAsteroidIds = new HashSet<Long>(asteroidMap.keySet());
 		remainingAsteroidIds.removeAll(relevantAsteroidIds);
 		result.put(-1, new ArrayList<Long>(remainingAsteroidIds));
+
 		return result;
 	}
 
@@ -149,14 +155,13 @@ public class Player implements pb.sim.Player {
 		time++;
 		refreshIndexMap(asteroids);
 		updateClusters(asteroids);
-		System.out.println("play: " + asteroidClusters);
 		//debug the cluster
-		/*for(int i = 0; i < cluster_number; i++){
-        	System.out.println("cluster id: " + i);
-        	for(Long id: asteroidClusters.get(i)){
-        		System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
-        	}
-        }*/
+		for(int i = 0; i < cluster_number; i++){
+			System.out.println("cluster id: " + i);
+			for(Long id: asteroidClusters.get(i)){
+				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
+			}
+		}
 		int count = 0;
 		Set<Integer> keys = time_of_push.keySet();
 
@@ -230,6 +235,7 @@ public class Player implements pb.sim.Player {
 				} else {
 					removedAsteroidCount++;
 					// If removed asteroids are greater than 2, time to reorder
+
 					if(removedAsteroidCount > 2) {
 						reorderCluster(asteroids);
 						return;
@@ -293,10 +299,7 @@ public class Player implements pb.sim.Player {
 				}
 			}
 			cluster_number = newClusterNumber;
-			System.out.println("New cluster number: " + cluster_number);
 			asteroidClusters = map;
-			System.out.println("New asteroidCluster size() " + asteroidClusters.size() + " map size: " + map.size());
-			
 		}    
 	}
 	public boolean willOverlap(Point p1, double r1, Point p2, double r2)
@@ -378,7 +381,6 @@ public class Player implements pb.sim.Player {
 		Point origin = new Point(0, 0);
 		//        System.out.println("clusters: " + asteroidClusters);
 		//        System.out.println("cluster number: " + cluster_number);
-		System.out.println("asteroidClusters.size(): " + asteroidClusters.size());
 		for(int i = 0; i < asteroidClusters.size() - 1; i++){
 			debug("i: " + i);
 			if(time_of_push.get(i) != null) {
@@ -386,7 +388,7 @@ public class Player implements pb.sim.Player {
 				continue;
 			}
 			ids = asteroidClusters.get(i);
-			
+
 			Collections.sort(ids, new Comparator<Long>() {
 				@Override
 				public int compare(Long l1, Long l2) {
@@ -394,6 +396,11 @@ public class Player implements pb.sim.Player {
 					Asteroid a2 = asteroidMap.get(l2);
 					if(a1 == null){
 						System.out.println("null: " + l1 + " ");
+						for(int i = 0; i < asteroids.length; i++){
+							if(asteroids[i].id == l1)
+								System.out.println("!!!!!!!!exists: " + asteroids[i].id);
+						}
+						System.out.println("done searching");
 					}
 					double d1 = Point.distance(origin, a1.orbit.positionAt(time - a1.epoch));
 					double d2 = Point.distance(origin, a2.orbit.positionAt(time - a2.epoch));
