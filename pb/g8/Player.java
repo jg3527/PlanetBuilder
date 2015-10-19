@@ -282,11 +282,22 @@ public class Player implements pb.sim.Player {
 	public void mergeOnlyOneAstCluster(){
 		boolean changed = false;
 		for(int i = 0; i < cluster_number; i++){
-			if(asteroidClusters.get(i).size() == 1){
+			List<Long> list = asteroidClusters.get(i);
+			if(list.size() == 1){
 				changed = true;
 				int index = i == cluster_number - 1 ? cluster_number - 2 : i + 1;
 				asteroidClusters.get(index).addAll(asteroidClusters.get(i));
 				asteroidClusters.put(i, null);
+			}else{
+				Asteroid a1 = asteroidMap.get(list.get(0));
+				Asteroid a2 = asteroidMap.get(list.get(list.size() - 1));
+				double dis = Math.abs(a1.orbit.a - a2.orbit.a);
+				double radius = a1.radius() + a2.radius();
+				if(dis < radius){
+					int index = i == cluster_number - 1 ? cluster_number - 2 : i + 1;
+					asteroidClusters.get(index).addAll(asteroidClusters.get(i));
+					asteroidClusters.put(i, null);
+				}
 			}
 		}
 		if(changed){
