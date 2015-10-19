@@ -122,10 +122,11 @@ public class Player implements pb.sim.Player {
 		/* Create a new instance of the KMeans algorithm, with no options
 		 * specified. By default this will generate 4 clusters.
 		 */
-		Clusterer km = new KMeans(clusterCount);
+		Clusterer km = new KMeans(clusterCount, 10000);
 		/*  Cluster the data, it will be returned as an array of data sets,
 		 *  with each dataset representing a cluster.
 		 */
+		
 		return km.cluster(data);
 	}
 
@@ -155,13 +156,7 @@ public class Player implements pb.sim.Player {
 		time++;
 		refreshIndexMap(asteroids);
 		updateClusters(asteroids);
-		//debug the cluster
-		for(int i = 0; i < cluster_number; i++){
-			System.out.println("cluster id: " + i);
-			for(Long id: asteroidClusters.get(i)){
-				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
-			}
-		}
+
 		int count = 0;
 		Set<Integer> keys = time_of_push.keySet();
 
@@ -206,7 +201,15 @@ public class Player implements pb.sim.Player {
 
 		//========================================*/
 	}
-
+	private void debugCluster(){
+		//debug the cluster
+		for(int i = 0; i < cluster_number; i++){
+			System.out.println("cluster id: " + i);
+			for(Long id: asteroidClusters.get(i)){
+				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
+			}
+		}
+	}
 	private void updateClusters(Asteroid[] asteroids) {
 		int count = 0;
 		for(Map.Entry<Integer, List<Long>> entry: asteroidClusters.entrySet()) {
@@ -364,14 +367,32 @@ public class Player implements pb.sim.Player {
 		double half = 0;
 		long firstId = asteroids[asteroids.length - 1].id;
 		long secondId = asteroids[asteroids.length - 1].id;
+//		Asteroid middleAsteroid = asteroids[asteroids.length / 2];
+//		Point v = middleAsteroid.orbit.velocityAt(time - middleAsteroid.epoch);
+//		double vRandom = Math.sqrt(v.x * v.x + v.y * v.y) * 0.25;
+//		boolean alreadySkip = false;
+//		double abandonedMass = 0;
+//		int indexOfMedian = 0;
 		for(int i = asteroids.length - 1; i >= 0; i--){
-			if(half >= sum / 2){
+			/*double a = asteroids[i].orbit.a;
+			if(!alreadySkip){
+				double vHomman = Math.sqrt(Orbit.GM / a) * (Math.sqrt(2 * a / (a + middleAsteroid.orbit.a) - 1));
+				if(vHomman > vRandom && (abandonedMass + asteroids[i].mass < half)){
+					System.out.println("abondan this ast: " + a);
+					continue;
+				}
+			}
+			*/
+			if(half >= sum * 0.6){
+//				indexOfMedian = i;
 				break;
 			}
+//			alreadySkip = true;
 			half += asteroids[i].mass;
 			ret.add(asteroids[i].id);
 			secondId = asteroids[i].id;
 		}
+		//ret.remove(o)
 		clusterThreshold = Math.abs(asteroidMap.get(firstId).orbit.a - asteroidMap.get(secondId).orbit.a) / ret.size();
 		return ret;	
 	}
@@ -388,7 +409,7 @@ public class Player implements pb.sim.Player {
 				continue;
 			}
 			ids = asteroidClusters.get(i);
-
+			
 			Collections.sort(ids, new Comparator<Long>() {
 				@Override
 				public int compare(Long l1, Long l2) {
@@ -422,13 +443,12 @@ public class Player implements pb.sim.Player {
 				//TODO
 				//                System.out.println("There are multiple too!");
 				Asteroid a2 = asteroidMap.get(ids.get(size - 1));
-
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
 					Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
 					if(push != null){
 						System.out.println("Real push");
-						// do this at the time of push, not immdiately
+						// do this at the time of pushnot,  immdiately
 						System.out.println("time to push: " + push.time_of_push);
 						System.out.println("energy: " + push.energy);
 						System.out.println("collision time: " + push.time_of_collision);
@@ -478,10 +498,10 @@ public class Player implements pb.sim.Player {
 			//the first parameter is the index
 			System.out.println("adding new push");
 			long time_of_collision = (new Double(timeH)).longValue() + time;
-			long time_of_collision_2 = calCollisionTime(a1, a2, 0, t, p1, p2);
+			//long time_of_collision_2 = calCollisionTime(a1, a2, 0, t, p1, p2);
 			System.out.println(time_of_collision);
 			System.out.println(timeH);
-			System.out.println(time_of_collision_2);
+			//System.out.println(time_of_collision_2);
 			//            if(time_of_collision < t) {
 			int index = asteroidIndexMap.get(a1.id);
 			System.out.println("index:" + index);
