@@ -1,7 +1,16 @@
 package pb.g8;
 
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 import net.sf.javaml.clustering.Clusterer;
 import net.sf.javaml.clustering.KMeans;
@@ -24,7 +33,7 @@ public class Player implements pb.sim.Player {
 	// current time, time limit
 	private long time = -1;
 	private long time_limit = -1;
-
+	private long number_of_ast = 0;
 	private Point origin = new Point(0,0);
 
 	// time until next push
@@ -52,7 +61,7 @@ public class Player implements pb.sim.Player {
 			throw new IllegalStateException("Time quantum is not a day");
 		this.time_limit = time_limit;
 		this.total_number = asteroids.length;
-
+		this.number_of_ast = asteroids.length;
 		refreshIndexMap(asteroids);
 		reorderCluster(asteroids);
 		time_of_push = new HashMap<Integer, Push>();
@@ -102,13 +111,7 @@ public class Player implements pb.sim.Player {
 		return result;
 	}
 
-	private Set<Long> getAsteroidIds(Asteroid[] asteroids) {
-		Set<Long> ids = new HashSet<Long>();
-		for(Asteroid asteroid: asteroids) {
-			ids.add(asteroid.id);
-		}
-		return ids;
-	}
+	
 
 	private Dataset[] computeClusters(Set<Long> relevantAsteroidIds, int clusterCount) {
 		// create default data set
@@ -147,7 +150,9 @@ public class Player implements pb.sim.Player {
 			}
 			clusters -= nearbyAsteroids / (nearbyAsteroids + 1);
 		}
-		return (int) clusters / 2;
+		int divider = (int)(number_of_ast / 100);
+		divider = (int)Math.pow(2, divider);
+		return (int) clusters / 2 / divider == 0 ? 1 :(int) clusters / 2 / divider;
 	}
 
 	// try to push asteroid
@@ -201,15 +206,7 @@ public class Player implements pb.sim.Player {
 
 		//========================================*/
 	}
-	private void debugCluster(){
-		//debug the cluster
-		for(int i = 0; i < cluster_number; i++){
-			System.out.println("cluster id: " + i);
-			for(Long id: asteroidClusters.get(i)){
-				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
-			}
-		}
-	}
+	
 	private void updateClusters(Asteroid[] asteroids) {
 		int count = 0;
 		for(Map.Entry<Integer, List<Long>> entry: asteroidClusters.entrySet()) {
@@ -383,7 +380,7 @@ public class Player implements pb.sim.Player {
 				}
 			}
 			*/
-			if(half >= sum * 0.6){
+			if(half >= sum * 0.55){
 //				indexOfMedian = i;
 				break;
 			}
@@ -409,20 +406,13 @@ public class Player implements pb.sim.Player {
 				continue;
 			}
 			ids = asteroidClusters.get(i);
-			
+			//List<Long> list = asteroidClusters.get(cluster_number - 1);
+			//Asteroid a2 = asteroidMap.get(list.get(list.size() - 1));
 			Collections.sort(ids, new Comparator<Long>() {
 				@Override
 				public int compare(Long l1, Long l2) {
 					Asteroid a1 = asteroidMap.get(l1);
 					Asteroid a2 = asteroidMap.get(l2);
-					if(a1 == null){
-						System.out.println("null: " + l1 + " ");
-						for(int i = 0; i < asteroids.length; i++){
-							if(asteroids[i].id == l1)
-								System.out.println("!!!!!!!!exists: " + asteroids[i].id);
-						}
-						System.out.println("done searching");
-					}
 					double d1 = Point.distance(origin, a1.orbit.positionAt(time - a1.epoch));
 					double d2 = Point.distance(origin, a2.orbit.positionAt(time - a2.epoch));
 					return (int)(d1 - d2);
@@ -474,8 +464,7 @@ public class Player implements pb.sim.Player {
 
 	//Push a1 to a2
 	private Push calculateFirstPush(Asteroid a1, Asteroid a2, long t, double[] energy, double[] direction){
-		Point p1 = new Point();
-		Point p2 = new Point();
+		
 		double r1 = a1.orbit.a;
 		double r2 = a2.orbit.a;
 		Point v1 = a1.orbit.velocityAt(time - a1.epoch);
@@ -661,5 +650,21 @@ public class Player implements pb.sim.Player {
             time_of_push = time + turns_per_retry;
 }
 }
+	}
+	private void debugCluster(){
+		//debug the cluster
+		for(int i = 0; i < cluster_number; i++){
+			System.out.println("cluster id: " + i);
+			for(Long id: asteroidClusters.get(i)){
+				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
+			}
+		}
+	}
+	private Set<Long> getAsteroidIds(Asteroid[] asteroids) {
+		Set<Long> ids = new HashSet<Long>();
+		for(Asteroid asteroid: asteroids) {
+			ids.add(asteroid.id);
+		}
+		return ids;
 	}
 }*/
