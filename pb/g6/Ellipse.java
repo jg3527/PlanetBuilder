@@ -12,7 +12,7 @@ public class Ellipse {
         A = 0.0;
         h = 0.0;
         k = 0.0;
-        foci = new Point[] {};
+        foci = new Point[]{};
     }
 
     public Ellipse(double a, double b, double A, double h, double k, Point[] f) {

@@ -123,7 +123,7 @@ public class Collision {
     }
 
     /**
-     * Find time of asteroid at position p
+     * Find time of asteroid at position p relative to the creation time
      */
     public long timeAt(Asteroid a, Point p) {
         long res;
@@ -134,42 +134,80 @@ public class Collision {
         double lastAngle;
         double pAngle = Math.atan2(p.y, p.x);
 
-        long dt = period / 2;
+        long dt = period / ((long) 2.0);
+        long dt_test = dt;
         long t = 0;
-        System.out.println("==================================================");
+        // System.out.println("==================================================");
         while (Point.distance(curPos, p) > a.radius()) {
-            // System.out.println("pAngle " + pAngle);
             lastAngle = curAngle;
-            System.out.println("try " + dt);
-            System.out.println("dist " + Point.distance(curPos, p));
+            // if the jump step is 0, t + 1 should be the solution
+            if (dt == 0) {
+                return t + 1;
+            }
             // jump
             t += dt;
             a.orbit.positionAt(t, curPos);
             curAngle = Math.atan2(curPos.y, curPos.x);
-            // System.out.println("try " + curPos);
+            // System.out.println("try " + dt);
+            // System.out.println("lastAngle " + lastAngle);
+            // System.out.println("pAngle " + pAngle);
+            // System.out.println("curAngle " + curAngle);
+            // System.out.println("time " + t);
 
-            if ((lastAngle*curAngle >= 0 && (curAngle-pAngle)*(lastAngle-pAngle) <= 0)
-                    || lastAngle*curAngle < 0 && (curAngle-pAngle)*(lastAngle-pAngle) >= 0) {
-                if (dt == 1 || dt == 0) {
-                    System.err.println("timeAt error");
+
+            if (lastAngle > 0 && curAngle < 0) {
+                if ((curAngle-pAngle)*(lastAngle-pAngle) <= 0) {
+                    continue;
                 }
-                // if pass by the point, get the last time
-                t -= dt; // come back to before jumping
-                dt /= 2;
             }
+            else if ((curAngle-pAngle)*(lastAngle-pAngle) >= 0) {
+                continue;
+            }  // not passing the point
+
+            /* passing the point */
+            // come back to before jumping
+            curAngle = lastAngle;
+            t -= dt; 
+
+            // if (dt > 10) {
+                dt /= 2;
+            // } else {
+            //     dt = 4 * dt / 5;
+            // }
         }
-        // System.err.println("timeAt found");
+        System.err.println("timeAt found");
         return t;
     }
 
     /**
+     * timeAt p relative to the beginning of time
+     * return -1 if cannot find any value
+     */
+    public long absTimeAt(Asteroid a, Point p) {
+        Point p0 = new Point();
+
+        // check for the exact point
+        for (int i = -5; i < 15; i++) {
+            a.orbit.positionAt(timeAt(a, p) + i, p0);
+            if (Point.distance(p, p0) < a.radius()) {
+                // System.out.println("timeAt: found i = " + i);
+                return timeAt(a, p) + i + a.epoch;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Find collision time when push asteroids[ignore_idx] to the state of asteroid a
+     *
      * @return list of all collision time under TIME_LIMIT.
      */
     public ArrayList<Long> findCollisionTime(Asteroid a, int ignore_idx) {
         ArrayList<ArrayList<Point>> intersect = findIntersection(a, ignore_idx);
         ArrayList<Long> collision = new ArrayList<Long>();
-        long t1, t2, k1, k2, period1, period2, colTime;
+        long t1, t2, period1, period2, colTime;
+        double k1, k2;
+
 
         for (int i = 0; i < intersect.size(); i++) {
             if (i == ignore_idx) {
@@ -181,20 +219,40 @@ public class Collision {
             period2 = asteroids[i].orbit.period();
             for (int j = 0; j < intersect.get(i).size(); j++) {
                 Point p = intersect.get(i).get(j);
-                t1 = timeAt(a, p);
-                t2 = timeAt(asteroids[i], p);
-                System.out.println(t1 + " " + t2);
-                k2 = 1;
-                // find int values of k1 and k2 such that t1 + k1*period1 = t2 + k2*period2
-                do {
-                    k1 = (k2*period2 + t2 - t1) / (long)period1;
-                    ++k2;
-                } while (k2 < (TIME_LIMIT/period2) && Math.round(k1) != k1);
 
-                colTime = t1 + k1*period1;
-                System.err.println("Collision between " + ignore_idx + " & " + i);
-                System.err.println("  Year: " + (1 + colTime / 365));
-                System.err.println("  Day: " + (1 + colTime % 365));
+                t1 = absTimeAt(a, p);
+                t2 = absTimeAt(asteroids[i], p);
+                if (t1 == -1 || t2 == -1) {
+                    // if can't find t1 or t2
+                    continue;
+                }
+
+                // find int values of k1 and k2 such that t1 + k1*period1 = t2 + k2*period2
+                k2 = 1;
+                do {
+
+                    k1 = (double)(k2*period2 + t2 - t1) / (double)period1;
+                    ++k2;
+                } while (k2 < (TIME_LIMIT / period2) && Math.round(k1) != k1);
+
+                colTime = t1 + (long)k1*period1;  // collision time
+
+                // check
+                Point p1 = new Point();
+                Point p2 = new Point();
+                a.orbit.positionAt(colTime - a.epoch, p1);
+                asteroids[i].orbit.positionAt(colTime - asteroids[i].epoch, p2);
+                double r = a.radius() + asteroids[i].radius();
+                if (Point.distance(p1, p2) >= r) {
+                    System.out.println("No collision");
+                    System.out.println("k1 " + k1 + " k2 " + (k2-1));
+                    System.out.println("t1 " + colTime + " t2 " + (t2 + (k2-1)*period2));
+                    continue;
+                }
+
+                System.out.println("Collision between " + ignore_idx + " & " + i);
+                System.out.println("  Year: " + (1 + colTime / 365));
+                System.out.println("  Day: " + (1 + colTime % 365));
                 collision.add(colTime);
             }
         }

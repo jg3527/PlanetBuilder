@@ -17,8 +17,7 @@ public class Utils {
     }
 
     // Euclidean distance between two points
-    public static double getPerpendicularAngle(double oriAngle)
-    {
+    public static double getPerpendicularAngle(double oriAngle) {
         // used to pick push angle perpendicular to v.direction() inward or outward
         Random random = new Random();
         double newAngle = oriAngle + (random.nextDouble() - 0.5) * Math.PI * 0.5;

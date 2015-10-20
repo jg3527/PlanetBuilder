@@ -1,5 +1,6 @@
 package pb.sim;
 
+import java.util.Random;
 import java.util.Iterator;
 
 public class Orbit implements Iterable <Point> {
@@ -43,7 +44,7 @@ public class Orbit implements Iterable <Point> {
 		Mo = Math.atan2(r.y, r.x);
 		// center and eccentricity is zero
 		c_x = c_y = e = 0.0;
-		// compute the period
+		// store the period
 		double T = (Math.PI + Math.PI) * Math.sqrt(a / GM) * a;
 		T_dt = (long) Math.ceil(T / dt);
 	}
@@ -79,7 +80,7 @@ public class Orbit implements Iterable <Point> {
 			A = Double.NaN;
 			// mean = true = eccentric anomaly
 			Mo = Math.atan2(r.y, r.x);
-			// center is zero
+			// store the ellipse center
 			c_x = c_y = 0.0;
 		} else {
 			if (e == 0.0) throw new ArithmeticException("e = 0 & a > b");
@@ -96,13 +97,13 @@ public class Orbit implements Iterable <Point> {
 			// compute the initial mean anomaly Mo using Eo and e
 			Mo = Eo - e * Math.sin(Eo);
 			if (Double.isNaN(Mo)) throw new ArithmeticException("Mo is NaN");
-			// compute the center
+			// store the ellipse center
 			double c1 = a * e;
 			double cD = A + Math.PI;
 			c_x = c1 * Math.cos(cD);
 			c_y = c1 * Math.sin(cD);
 		}
-		// compute the period
+		// store the period
 		double T = (Math.PI + Math.PI) * Math.sqrt(a / GM) * a;
 		T_dt = (long) Math.ceil(T / dt);
 	}
@@ -137,6 +138,7 @@ public class Orbit implements Iterable <Point> {
 			return;
 		}
 		// compute the eccentric anomaly using Newton-Raphson
+		Random R = null;
 		double E = M;
 		for (;;) {
 			// f(x) = x - e sin(x) - M
@@ -144,7 +146,11 @@ public class Orbit implements Iterable <Point> {
 			if (Math.abs(fE) < 1.0e-12) break;
 			// f'(x) = 1 - e cos(x)
 			E -= fE / (1.0 - e * Math.cos(E));
-			if (Double.isNaN(E)) throw new ArithmeticException("E is NaN");
+			if (Double.isNaN(E)) {
+				if (R == null) R = new Random(0);
+				E = R.nextDouble();
+				E += E + M - 1.0;
+			}
 		}
 		// center based coordinate system with foci on xx'
 		r.x = a * Math.cos(E);

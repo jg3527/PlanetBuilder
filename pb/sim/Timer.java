@@ -11,39 +11,39 @@ class Timer extends Thread {
 	private Exception exception = null;
 	private Object result = null;
 
-	public long cpu_ns()
+	private static ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+
+	public long time()
 	{
-		return ManagementFactory.getThreadMXBean().getThreadCpuTime(getId());
+		return isAlive() ? bean.getThreadCpuTime(getId()) : 0;
 	}
 
-	public <T> T call(Callable <T> task, long timeout) throws Exception
+	public <T> T call(Callable <T> task, long timeout_ms) throws Exception
 	{
 		if (!isAlive()) throw new IllegalStateException();
-		if (task == null) throw new IllegalArgumentException();
+		if (task == null) throw new NullPointerException();
 		this.task = task;
 		synchronized (this) {
 			start = true;
 			notify();
 		}
-		if (timeout <= 0)
-			synchronized (this) {
-				if (finished == false)
-					try {
-						wait();
-					} catch (InterruptedException e) {}
-			}
-		else
+		if (timeout_ms > 0) {
+			long epoch_ns = time();
+			long running_ms = 0;
 			do {
-				long cpu_time = cpu_ns();
 				synchronized (this) {
 					if (finished) break;
 					try {
-						wait(timeout);
+						wait(timeout_ms - running_ms);
 					} catch (InterruptedException e) {}
 				}
-				cpu_time = cpu_ns() - cpu_time;
-				timeout -= cpu_time / 1000000;
-			} while (timeout > 0);
+				running_ms = (time() - epoch_ns) / 1000000;
+			} while (running_ms < timeout_ms);
+		} else synchronized (this) {
+			while (finished == false) try {
+				wait();
+			} catch (InterruptedException e) {}
+		}
 		if (finished == false)
 			throw new TimeoutException();
 		finished = false;
@@ -57,10 +57,9 @@ class Timer extends Thread {
 	{
 		for (;;) {
 			synchronized (this) {
-				if (start == false)
-					try {
-						wait();
-					} catch (InterruptedException e) {}
+				while (start == false) try {
+					wait();
+				} catch (InterruptedException e) {}
 			}
 			start = false;
 			exception = null;

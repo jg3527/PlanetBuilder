@@ -20,7 +20,7 @@ public class Hohmann {
 		if (dv < 0)
 			direction += Math.PI;
         //System.out.println("expected collision time: " + expected_collision_time);
-		return new Push(a1, asteroid_to_push_index, energy, direction, expected_collision_time);
+		return new Push(a1, asteroid_to_push_index, energy, direction, time, expected_collision_time);
 	}
 
 	/**
@@ -37,17 +37,18 @@ public class Hohmann {
 
 		double energy = asteroid.mass * Math.pow(dv.magnitude(), 2) / 2;
 		double direction = dv.direction();
-		return new Push(asteroid, asteroid_to_push_index, energy, direction, -1);
+		return new Push(asteroid, asteroid_to_push_index, energy, direction, -1, -1);
 	}
 
 	/**
 	 * Return the time after current time when asteroid a can be pushed to b with Hohmann Transfer.
  	 */
-	public double timeToPush(long time, Asteroid a, Asteroid b) {
+	public static long timeToPush(long time, Asteroid a, Asteroid b) {
 		double ra = a.orbit.a;
 		double rb = b.orbit.a;
 
-		double angle = Math.PI * (1 - Math.pow(1 + ra / rb, 1.5) / Math.sqrt(8));
+		double angle = Math.PI * (1 - Math.pow(1 + ra / rb, 1.5) / Math.sqrt(8)) % ( 2 * Math.PI );
+		if (angle < 0) angle += 2 * Math.PI;
 
 		double aa = a.orbit.positionAt(time - a.epoch).direction();
 		double ba = b.orbit.positionAt(time - b.epoch).direction();
@@ -56,21 +57,37 @@ public class Hohmann {
 		if (angle_now < 0) angle_now += Math.PI * 2;
 
 		double alphaa = a.orbit.velocityAt(time - a.epoch).magnitude() / ra;
-		double alphab = a.orbit.velocityAt(time - b.epoch).magnitude() / rb;
+		double alphab = b.orbit.velocityAt(time - b.epoch).magnitude() / rb;
 
-		if (angle_now >= angle) {
-			if (alphaa >= alphab) {
-				return (angle_now - angle) / (alphaa - alphab);
-			} else {
-				return (Math.PI * 2 - angle_now + angle) / (alphab - alphaa);
-			}
-		} else {
-			if (alphab >= alphaa) {
-				return (angle - angle_now) / (alphaa - alphab);
-			} else {
-				return (Math.PI * 2 - angle + angle_now) / (alphab - alphaa);
+		double raw_time;
+
+		if (Math.abs(alphaa - alphab) < 1e-15) {
+			return -1; // Cannot transfer
+		}
+
+		raw_time = (angle_now - angle) / (alphaa - alphab);
+		if (raw_time < 0) {
+			raw_time = (angle_now - angle + 2 * Math.PI) / (alphaa - alphab);
+			if (raw_time < 0) {
+				raw_time = (angle_now - angle - 2 * Math.PI) / (alphaa - alphab);
 			}
 		}
 
+		if (raw_time == Double.NaN || raw_time > Long.MAX_VALUE) {
+			// Overflow
+			return -1;
+		}
+		// Check actual time to push
+		long wait_time = (long)(raw_time / Orbit.dt());
+
+		for (long push_time = time + wait_time - 5; push_time <= time + wait_time + 5; push_time++) {
+			if (push_time < time+1) continue;
+			Push p = generatePush(a, 0, b, push_time);
+			Asteroid pushed_asteroid = Asteroid.push(p.asteroid, push_time, p.energy, p.direction);
+			if (CollisionChecker.checkCollision(pushed_asteroid, b, p.expected_collision_time, push_time, -1) != -1) {
+				return push_time;
+			}
+		}
+		return -1;
 	}
 }
