@@ -446,7 +446,8 @@ public class Player implements pb.sim.Player {
 				Asteroid a2 = asteroidMap.get(ids.get(size - 1));
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
-					Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
+//                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
+                    Push push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
 					if(push != null){
 						System.out.println("Real push");
 						// do this at the time of pushnot,  immdiately
@@ -482,8 +483,9 @@ public class Player implements pb.sim.Player {
 		Point v2 = a2.orbit.velocityAt(time - a2.epoch);
 		double theta1 = Math.atan2(v1.y, v1.x);
 		double theta2 = Math.atan2(v2.y, v2.x);
-		double vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
-		double E = 0.5 * a1.mass * vnew * vnew;
+        double vnew;
+        vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
+        double E = 0.5 * a1.mass * vnew * vnew;
 
 		double timeH = Math.PI* Math.sqrt(Math.pow((r1 + r2), 3)/(8 * Orbit.GM));
 		double thresh = a1.radius() + a2.radius();
@@ -506,12 +508,62 @@ public class Player implements pb.sim.Player {
 			int index = asteroidIndexMap.get(a1.id);
 			System.out.println("index:" + index);
 			energy[index] = E;
-			direction[index] = theta1;
+            direction[index] = theta1;
 			return new Push(a1.id, E, theta1, time_push, time_of_collision);
 			//            }
 		}
 		return null;
 	}
+
+    //Push a1 to a2
+    private Push calculateFirstPushReverse(Asteroid a1, Asteroid a2, long t, double[] energy, double[] direction) {
+        if(a1.orbit.a < a2.orbit.a) {
+            Asteroid tmp = a2;
+            a2 = a1;
+            a1 = tmp;
+        }
+        double r1 = a2.orbit.a;
+        double r2 = a1.orbit.a;
+        double omegaOuter = Math.sqrt(Orbit.GM/ Math.pow(r1, 3));
+        Point velocityInner = a2.orbit.velocityAt(time - a2.epoch);
+        double angleInner = Math.atan2(velocityInner.y, velocityInner.x);
+
+        Point velocityOuter = a1.orbit.velocityAt(time - a1.epoch);
+        double angleOuter = Math.atan2(velocityOuter.y, velocityOuter.x);
+
+        double timeTransfer = Math.PI * Math.sqrt( Math.pow(r1+r2,3) / (8*Orbit.GM));
+
+        double sumRadii = a1.radius() + a2.radius();
+
+        double alignThreshold = sumRadii/r1;
+
+        double alignment = Math.abs(Math.PI - timeTransfer*omegaOuter - (angleInner - angleOuter));
+
+        if (alignment < alignThreshold)
+        {
+            double anglePush = 0.0;
+            if (angleOuter > 0)
+            {
+                anglePush = angleOuter - Math.PI;
+            }
+            else
+            {
+                anglePush = Math.PI + angleOuter;
+            }
+            //double velocityNew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt( 2*r2 / (r1+r2)) - 1);
+            double velocityNew = Math.sqrt(Orbit.GM / r2) * (1 - Math.sqrt( 2*r1 / (r1+r2)) );
+            int index = asteroidIndexMap.get(a1.id);
+            System.out.println("index:" + index);
+            long time_push = time;
+            long time_of_collision = (new Double(timeTransfer)).longValue() + time;
+            energy[index] = 0.5*a1.mass * velocityNew * velocityNew;
+            direction[index] = anglePush;
+            return new Push(a1.id, energy[index], direction[index], time_push, time_of_collision);
+            //store mass
+            //asteroidCombinedMass = (asteroids[outerIndex].mass + asteroids[innerIndex].mass);
+        }
+        return null;
+    }
 
 	//make the asteroid circular again
 	private void circularPush(Asteroid a, double[] energy, double[] direction){
