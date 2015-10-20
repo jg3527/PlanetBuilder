@@ -472,7 +472,7 @@ public class Player implements pb.sim.Player {
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
 //                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
-                    Push push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
+                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
 					if(push != null){
 						System.out.println("Real push");
 						// do this at the time of pushnot,  immdiately
