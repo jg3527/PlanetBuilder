@@ -54,6 +54,7 @@ public class Player implements pb.sim.Player {
 	private double clusterThreshold;
 	private double sumMass;
 	private double massThreshold;
+	
 	// print orbital information
 	public void init(Asteroid[] asteroids, long time_limit) 
 	{
@@ -188,7 +189,7 @@ public class Player implements pb.sim.Player {
 		time++;
 		refreshIndexMap(asteroids);
 		updateClusters(asteroids);
-		System.out.println(asteroidClusters);
+		//System.out.println(asteroidClusters);
 		//debugCluster();
 		int count = 0;
 		Set<Integer> keys = time_of_push.keySet();
@@ -336,8 +337,6 @@ public class Player implements pb.sim.Player {
 				if(asteroidClusters.get(i) != null){
 					map.put(newClusterNumber, asteroidClusters.get(i));
 					newClusterNumber++;
-				}else if(i == -1 && asteroidClusters.get(-1) == null){
-					System.out.println("what!!!");
 				}
 			}
 			cluster_number = newClusterNumber;
@@ -474,7 +473,13 @@ public class Player implements pb.sim.Player {
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
 //                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
-                    Push push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
+                    
+					Push push;
+					//if(time < time_limit / 2)
+						push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
+					//else {
+						//push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
+					//}
 					if(push != null){
 						System.out.println("Real push");
 						// do this at the time of pushnot,  immdiately
@@ -489,6 +494,11 @@ public class Player implements pb.sim.Player {
 		}
 
 
+	}
+	private void increaseClusterNumber(){
+		for (int i = 0; i < array.length; i++) {
+			
+		}
 	}
 	private void refreshIndexMap(Asteroid[] asteroids){
 		asteroidMap = new HashMap<Long, Asteroid>();
@@ -527,6 +537,8 @@ public class Player implements pb.sim.Player {
 			//the first parameter is the index
 			System.out.println("adding new push");
 			long time_of_collision = (new Double(timeH)).longValue() + time;
+			if(timeH > (time_limit - time) / 2)
+				return null;
 			//long time_of_collision_2 = calCollisionTime(a1, a2, 0, t, p1, p2);
 			System.out.println(time_of_collision);
 			System.out.println(timeH);
