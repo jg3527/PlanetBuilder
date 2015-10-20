@@ -52,8 +52,8 @@ public class Player implements pb.sim.Player {
 	private HashMap<Long, Integer> asteroidIndexMap;
 	private Set<Long> asteroidsForCircularPush;
 	private double clusterThreshold;
-
-
+	private double sumMass;
+	private double massThreshold;
 	// print orbital information
 	public void init(Asteroid[] asteroids, long time_limit) 
 	{
@@ -62,6 +62,12 @@ public class Player implements pb.sim.Player {
 		this.time_limit = time_limit;
 		this.total_number = asteroids.length;
 		this.number_of_ast = asteroids.length;
+		sumMass = 0;
+		massThreshold = 0;
+		
+		//Calculating the whole mass
+		sumMass(asteroids);
+		defineMassThreshold(asteroids);
 		refreshIndexMap(asteroids);
 		reorderCluster(asteroids);
 		time_of_push = new HashMap<Integer, Push>();
@@ -70,6 +76,27 @@ public class Player implements pb.sim.Player {
 		}
 		//        pushAgain = new HashMap<Integer, Boolean>();
 		System.out.println("Initialization done!");
+	}
+	private void sumMass(Asteroid[] asteroids){
+		for(int i = 0; i < asteroids.length; i++){
+			sumMass += asteroids[i].mass;
+		}
+		System.out.println("sum mass" + sumMass);
+	}
+	private void defineMassThreshold(Asteroid[] asteroids){
+		boolean total = false;
+		for(Asteroid ast: asteroids){
+			if(ast.mass > sumMass / 2){
+				total = true;
+				break;
+			}
+		}
+		if(total){
+			massThreshold = sumMass;
+		}else{
+			massThreshold = sumMass * 0.55;
+		}
+		System.out.println("mass threshold: " + massThreshold);
 	}
 
 	private void reorderCluster(Asteroid[] asteroids) {
@@ -370,10 +397,6 @@ public class Player implements pb.sim.Player {
 				return (int)(a1.orbit.a - a2.orbit.a);
 			}
 		});
-		double sum = 0;
-		for(int i = 0; i < asteroids.length; i++){
-			sum += asteroids[i].mass;
-		}
 		double half = 0;
 		long firstId = asteroids[asteroids.length - 1].id;
 		long secondId = asteroids[asteroids.length - 1].id;
@@ -393,7 +416,7 @@ public class Player implements pb.sim.Player {
 				}
 			}
 			*/
-			if(half >= sum * 0.55){
+			if(half >= massThreshold){
 //				indexOfMedian = i;
 				break;
 			}
