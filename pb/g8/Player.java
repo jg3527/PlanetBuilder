@@ -188,7 +188,8 @@ public class Player implements pb.sim.Player {
 		time++;
 		refreshIndexMap(asteroids);
 		updateClusters(asteroids);
-
+		System.out.println(asteroidClusters);
+		//debugCluster();
 		int count = 0;
 		Set<Integer> keys = time_of_push.keySet();
 
@@ -308,9 +309,8 @@ public class Player implements pb.sim.Player {
 
 	public void mergeOnlyOneAstCluster(){
 		boolean changed = false;
-		if(asteroidClusters.size() == 2)
-			return;
-		for(int i = 0; i < cluster_number; i++){
+		
+		for(int i = 0; i < (asteroidClusters.size() - 1); i++){
 			List<Long> list = asteroidClusters.get(i);
 			if(list.size() == 1){
 				changed = true;
@@ -330,12 +330,14 @@ public class Player implements pb.sim.Player {
 			}*/
 		}
 		if(changed){
-			int newClusterNumber = 0;
+			int newClusterNumber = -1;
 			HashMap<Integer, List<Long>> map = new HashMap<Integer, List<Long>>();
 			for(int i = -1; i < cluster_number - 1; i++){
 				if(asteroidClusters.get(i) != null){
 					map.put(newClusterNumber, asteroidClusters.get(i));
 					newClusterNumber++;
+				}else if(i == -1 && asteroidClusters.get(-1) == null){
+					System.out.println("what!!!");
 				}
 			}
 			cluster_number = newClusterNumber;
@@ -472,7 +474,7 @@ public class Player implements pb.sim.Player {
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
 //                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
-                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
+                    Push push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
 					if(push != null){
 						System.out.println("Real push");
 						// do this at the time of pushnot,  immdiately
@@ -671,6 +673,15 @@ public class Player implements pb.sim.Player {
 		}
 		return -1;
 	}
+	private void debugCluster(){
+		//debug the cluster
+		for(int i = 0; i < cluster_number; i++){
+			System.out.println("cluster id: " + i);
+			for(Long id: asteroidClusters.get(i)){
+				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
+			}
+		}
+	}
 }
 
 /*for (int retry = 1 ; retry <= retries_per_turn ; ++retry) 
@@ -739,15 +750,7 @@ public class Player implements pb.sim.Player {
 }
 }
 	}
-	private void debugCluster(){
-		//debug the cluster
-		for(int i = 0; i < cluster_number; i++){
-			System.out.println("cluster id: " + i);
-			for(Long id: asteroidClusters.get(i)){
-				System.out.println("asteroid " + id + " a: " + asteroidMap.get(id).orbit.a);
-			}
-		}
-	}
+	
 	private Set<Long> getAsteroidIds(Asteroid[] asteroids) {
 		Set<Long> ids = new HashSet<Long>();
 		for(Asteroid asteroid: asteroids) {
