@@ -59,8 +59,7 @@ public class Player implements pb.sim.Player {
 	private double clusterThreshold;
 	private double sumMass;
 	private double massThreshold;
-	
-	Set<Long> toBeCollidedIds;
+    private List<Tuple> collisionPairs;
 	
 	// print orbital information
 	public void init(Asteroid[] asteroids, long time_limit) 
@@ -72,7 +71,8 @@ public class Player implements pb.sim.Player {
 		this.number_of_ast = asteroids.length;
 		sumMass = 0;
 		massThreshold = 0;
-		toBeCollidedIds = new HashSet<Long>();
+        collisionPairs = new ArrayList<Tuple>();
+
 		//Calculating the whole mass
 		sumMass(asteroids);
 		defineMassThreshold(asteroids);
@@ -555,6 +555,7 @@ public class Player implements pb.sim.Player {
 			System.out.println("index:" + index);
 			energy[index] = E;
             direction[index] = theta1;
+            collisionPairs.add(new Tuple(a1.id, a2.id));
 			return new Push(a1.id, E, theta1, time_push, time_of_collision);
 			//            }
 		}
@@ -604,6 +605,7 @@ public class Player implements pb.sim.Player {
             long time_of_collision = (new Double(timeTransfer)).longValue() + time;
             energy[index] = 0.5*a1.mass * velocityNew * velocityNew;
             direction[index] = anglePush;
+            collisionPairs.add(new Tuple(a1.id, a2.id));
             return new Push(a1.id, energy[index], direction[index], time_push, time_of_collision);
             //store mass
             //asteroidCombinedMass = (asteroids[outerIndex].mass + asteroids[innerIndex].mass);
