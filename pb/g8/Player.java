@@ -1,16 +1,7 @@
 package pb.g8;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import net.sf.javaml.clustering.Clusterer;
 import net.sf.javaml.clustering.KMeans;
@@ -59,7 +50,7 @@ public class Player implements pb.sim.Player {
 	private double clusterThreshold;
 	private double sumMass;
 	private double massThreshold;
-    private List<Tuple> collisionPairs;
+    private Set<Tuple> collisionPairs;
 	
 	// print orbital information
 	public void init(Asteroid[] asteroids, long time_limit) 
@@ -71,7 +62,7 @@ public class Player implements pb.sim.Player {
 		this.number_of_ast = asteroids.length;
 		sumMass = 0;
 		massThreshold = 0;
-        collisionPairs = new ArrayList<Tuple>();
+        collisionPairs = new HashSet<Tuple>();
 
 		//Calculating the whole mass
 		sumMass(asteroids);
@@ -282,6 +273,16 @@ public class Player implements pb.sim.Player {
 				}
 			}
 		}
+        for(Long idToRemove: idsToRemove) {
+            Iterator<Tuple> itr = collisionPairs.iterator();
+            while(itr.hasNext()) {
+                Tuple tuple = itr.next();
+                if(tuple.containsId(idToRemove)) {
+                    itr.remove();
+                    break;
+                }
+            }
+        }
 		for(Long id: newAsteroidIds) {
 			Asteroid newAsteroid = asteroidMap.get(id);
 			if(newAsteroid.orbit.a != newAsteroid.orbit.b) {
