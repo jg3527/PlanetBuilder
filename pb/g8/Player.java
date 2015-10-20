@@ -281,6 +281,8 @@ public class Player implements pb.sim.Player {
 
 	public void mergeOnlyOneAstCluster(){
 		boolean changed = false;
+		if(asteroidClusters.size() == 2)
+			return;
 		for(int i = 0; i < cluster_number; i++){
 			List<Long> list = asteroidClusters.get(i);
 			if(list.size() == 1){
@@ -288,7 +290,7 @@ public class Player implements pb.sim.Player {
 				int index = i == cluster_number - 1 ? cluster_number - 2 : i + 1;
 				asteroidClusters.get(index).addAll(asteroidClusters.get(i));
 				asteroidClusters.put(i, null);
-			}else{
+			}/*else{
 				Asteroid a1 = asteroidMap.get(list.get(0));
 				Asteroid a2 = asteroidMap.get(list.get(list.size() - 1));
 				double dis = Math.abs(a1.orbit.a - a2.orbit.a);
@@ -298,12 +300,12 @@ public class Player implements pb.sim.Player {
 					asteroidClusters.get(index).addAll(asteroidClusters.get(i));
 					asteroidClusters.put(i, null);
 				}
-			}
+			}*/
 		}
 		if(changed){
 			int newClusterNumber = 0;
 			HashMap<Integer, List<Long>> map = new HashMap<Integer, List<Long>>();
-			for(int i = 0; i < cluster_number - 1; i++){
+			for(int i = -1; i < cluster_number - 1; i++){
 				if(asteroidClusters.get(i) != null){
 					map.put(newClusterNumber, asteroidClusters.get(i));
 					newClusterNumber++;
