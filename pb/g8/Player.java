@@ -51,8 +51,9 @@ public class Player implements pb.sim.Player {
 	private double sumMass;
 	private double massThreshold;
     private Set<Tuple> collisionPairs;
-	
+	private HashSet<Long> hasPush;
 	// print orbital information
+	private Double curMass;
 	public void init(Asteroid[] asteroids, long time_limit) 
 	{
 		if (Orbit.dt() != 24 * 60 * 60)
@@ -60,6 +61,7 @@ public class Player implements pb.sim.Player {
 		this.time_limit = time_limit;
 		this.total_number = asteroids.length;
 		this.number_of_ast = asteroids.length;
+		hasPush = new HashSet<Long>();
 		sumMass = 0;
 		massThreshold = 0;
         collisionPairs = new HashSet<Tuple>();
@@ -215,6 +217,12 @@ public class Player implements pb.sim.Player {
 			circularPush(asteroidMap.get(asteroidId), energy, direction);
 		}
 		if(asteroidsForCircularPush.size() > 0) {
+			return;
+		}
+		double time_thresh = time_limit * 0.97 < 20 ? 20l : time_limit * 0.97;
+		time_thresh = 0.97*time_limit;
+		if(time >= time_thresh){
+			finalTry(asteroids, energy, direction);
 			return;
 		}
 		if(count == cluster_number){
@@ -470,6 +478,7 @@ public class Player implements pb.sim.Player {
 			}
 			//    		System.out.println("cluster id: " + i + " size: " + size);
 			//loop within this cluster
+			
 			if(size == 1){
 				//TODO push it to the next cluster
 				//                System.out.println("There is only 1");
@@ -532,7 +541,7 @@ public class Player implements pb.sim.Player {
         vnew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt(2 * r2 / (r1 + r2)) - 1);
         double E = 0.5 * a1.mass * vnew * vnew;
 
-		double timeH = Math.PI* Math.sqrt(Math.pow((r1 + r2), 3)/(8 * Orbit.GM));
+		double timeH = Math.PI* Math.sqrt(Math.pow((r1 + r2), 3)/(8 * Orbit.GM)) ;
 		double thresh = a1.radius() + a2.radius();
 		double omega2 = Math.sqrt(Orbit.GM / Math.pow(r2, 3));
 
@@ -544,11 +553,11 @@ public class Player implements pb.sim.Player {
 
 			//the first parameter is the index
 			System.out.println("adding new push");
-			long time_of_collision = (new Double(timeH)).longValue() + time;
-//			if(timeH > (time_limit - time) / 2)
+			long time_of_collision = (new Double(timeH / (86400))).longValue() + time;
+//			if(timeH / 86400 > (time_limit - time) / 2)
 //				return null;
 			//long time_of_collision_2 = calCollisionTime(a1, a2, 0, t, p1, p2);
-			System.out.println(time_of_collision);
+			System.out.println("time of collison: " + time_of_collision);
 			System.out.println(timeH);
 			//System.out.println(time_of_collision_2);
 			//            if(time_of_collision < t) {
@@ -570,6 +579,52 @@ public class Player implements pb.sim.Player {
             a2 = a1;
             a1 = tmp;
         }
+        double r1 = a2.orbit.a;
+        double r2 = a1.orbit.a;
+        double omegaOuter = Math.sqrt(Orbit.GM/ Math.pow(r1, 3));
+        Point velocityInner = a2.orbit.velocityAt(time - a2.epoch);
+        double angleInner = Math.atan2(velocityInner.y, velocityInner.x);
+
+        Point velocityOuter = a1.orbit.velocityAt(time - a1.epoch);
+        double angleOuter = Math.atan2(velocityOuter.y, velocityOuter.x);
+
+        double timeTransfer = Math.PI * Math.sqrt( Math.pow(r1+r2,3) / (8*Orbit.GM));
+
+        double sumRadii = a1.radius() + a2.radius();
+
+        double alignThreshold = sumRadii/r1;
+
+        double alignment = Math.abs(Math.PI - timeTransfer*omegaOuter - (angleInner - angleOuter));
+
+        if (alignment < alignThreshold)
+        {
+            double anglePush = 0.0;
+            if (angleOuter > 0)
+            {
+                anglePush = angleOuter - Math.PI;
+            }
+            else
+            {
+                anglePush = Math.PI + angleOuter;
+            }
+            //double velocityNew = Math.sqrt(Orbit.GM / r1) * (Math.sqrt( 2*r2 / (r1+r2)) - 1);
+            double velocityNew = Math.sqrt(Orbit.GM / r2) * (1 - Math.sqrt( 2*r1 / (r1+r2)) );
+            int index = asteroidIndexMap.get(a1.id);
+            System.out.println("index:" + index);
+            long time_push = time;
+            long time_of_collision = (new Double(timeTransfer)).longValue() + time;
+            energy[index] = 0.5*a1.mass * velocityNew * velocityNew;
+            direction[index] = anglePush;
+            collisionPairs.add(new Tuple(a1.id, a2.id));
+            return new Push(a1.id, energy[index], direction[index], time_push, time_of_collision);
+            //store mass
+            //asteroidCombinedMass = (asteroids[outerIndex].mass + asteroids[innerIndex].mass);
+        }
+        return null;
+    }
+    //Push a1 to a2
+    private Push calculateFirstPushReverseTmp(Asteroid a1, Asteroid a2, long t, double[] energy, double[] direction) {
+        
         double r1 = a2.orbit.a;
         double r2 = a1.orbit.a;
         double omegaOuter = Math.sqrt(Orbit.GM/ Math.pow(r1, 3));
@@ -839,7 +894,64 @@ public class Player implements pb.sim.Player {
             }
         }
         return false;
-
     }
+	
+	Asteroid mstAsteroid = null;
+	private void finalTry(Asteroid[] asteroids, double[] energy, double[] direction){
+		if(!hasPush.isEmpty()) {
+			boolean exist = false;
+			for(Asteroid a: asteroids) {
+				if(hasPush.contains(a.id)) {
+					exist = true;
+					break;
+				}
+			}
+			if(!exist) {
+				curMass = null;
+				hasPush = new HashSet<Long>();
+			}
+		}
+		if(curMass != null && curMass > massThreshold)
+			return;
+		Arrays.sort(asteroids, new Comparator<Asteroid>() {
+			@Override
+			public int compare(Asteroid o1, Asteroid o2) {
+				return (int)(o1.orbit.a - o2.orbit.a);
+			}
+		});
+		System.out.println("Final TRy");
+		
+		if(mstAsteroid == null) {
+			mstAsteroid = asteroids[getHeaviestAsteroid(asteroids)];
+		}
+		System.out.println("master " + mstAsteroid.mass);
+		System.out.println("0: " + asteroids[0].mass);
+		if(curMass == null){
+			curMass = mstAsteroid.mass;
+		}
+		
+		for(int i = asteroids.length - 1; i >= 0; i--){
+			if(mstAsteroid == asteroids[i]) {
+				continue;
+			}
+			if(curMass > massThreshold)
+				break;
+			Asteroid a1 = asteroids[i];
+			if(hasPush.contains(a1.id))
+				continue;
+			Push push;
+			if(a1.orbit.a < mstAsteroid.orbit.a){
+				System.out.println("final try forword");
+				push = calculateFirstPush(a1, mstAsteroid, 6000, energy, direction);
+			}else{
+				push = calculateFirstPushReverseTmp(mstAsteroid, a1, 6000, energy, direction);
+			}
+			if(push != null){
+				curMass += a1.mass;
+				hasPush.add(a1.id);
+				continue;
+			}
+		}
+	}
 
 }
