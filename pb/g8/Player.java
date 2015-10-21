@@ -219,7 +219,10 @@ public class Player implements pb.sim.Player {
 		if(asteroidsForCircularPush.size() > 0) {
 			return;
 		}
-		double time_thresh = time_limit * 0.97 < 9200 ? 9200l : time_limit * 0.97;
+
+		double time_thresh = time_limit * 0.97 < 25 * 365 ? time_limit - 25 * 365  : time_limit * 0.97;
+		//time_thresh = time_limit;
+
 		if(time >= time_thresh){
 			finalTry(asteroids, energy, direction);
 			return;
@@ -553,8 +556,9 @@ public class Player implements pb.sim.Player {
 			//the first parameter is the index
 			System.out.println("adding new push");
 			long time_of_collision = (new Double(timeH / (86400))).longValue() + time;
-//			if(timeH / 86400 > (time_limit - time) / 2)
-//				return null;
+
+			if(timeH / 86400 > (time_limit - time) / 2)
+				return null;
             System.out.println("time of collison: " + time_of_collision);
             System.out.println(timeH);
             Asteroid a_new = Asteroid.push(a1, time, E, theta1);
@@ -566,6 +570,7 @@ public class Player implements pb.sim.Player {
             if(time_of_collision == -1 || time_of_collision > time_limit) {
                 return null;
             }
+
 			//            if(time_of_collision < t) {
 			int index = asteroidIndexMap.get(a1.id);
 			System.out.println("index:" + index);
