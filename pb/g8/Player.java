@@ -228,7 +228,7 @@ public class Player implements pb.sim.Player {
 			return;
 		}
 
-		double time_thresh = time_limit * 0.97 < 25 * 365 ? time_limit - 25 * 365  : time_limit * 0.97;
+		double time_thresh = time_limit * 0.97 < 20 * 365 ? time_limit - 20 * 365  : time_limit * 0.97;
 		//time_thresh = time_limit;
 
 		if(time >= time_thresh){
