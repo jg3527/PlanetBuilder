@@ -1,7 +1,17 @@
 package pb.g8;
 
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 import net.sf.javaml.clustering.Clusterer;
 import net.sf.javaml.clustering.KMeans;
@@ -36,9 +46,8 @@ public class Player implements pb.sim.Player {
 
 
 	// number of retries
-	private int retries_per_turn = 1;
+
 	private int turns_per_retry = 3;
-	private int total_number;
 
 	private HashMap<Integer, List<Long>> asteroidClusters;
 	private int cluster_number = 0;
@@ -59,7 +68,6 @@ public class Player implements pb.sim.Player {
 		if (Orbit.dt() != 24 * 60 * 60)
 			throw new IllegalStateException("Time quantum is not a day");
 		this.time_limit = time_limit;
-		this.total_number = asteroids.length;
 		this.number_of_ast = asteroids.length;
 		hasPush = new HashSet<Long>();
 		sumMass = 0;
@@ -230,18 +238,7 @@ public class Player implements pb.sim.Player {
 		if(count == cluster_number){
 			return;
 		}
-		long time_left_per_asteroid = (time_limit - time)/asteroids.length/2;
-		//time_left_per_asteroid = Math.max(time_left_per_asteroid, 3650);
-		//System.out.println("Year: " + (1 + time / 365));
-		//System.out.println("Day: "  + (1 + time % 365));
-		//List<Push> pushes = new ArrayList<Push>();
-		//============================================
 		tryToCollideOutside(asteroids, energy, direction);
-		//        System.out.println(time_of_push);
-
-		//============================================
-
-		//========================================*/
 	}
 	
 	private void updateClusters(Asteroid[] asteroids) {
@@ -336,17 +333,7 @@ public class Player implements pb.sim.Player {
 				int index = i == cluster_number - 1 ? cluster_number - 2 : i + 1;
 				asteroidClusters.get(index).addAll(asteroidClusters.get(i));
 				asteroidClusters.put(i, null);
-			}/*else{
-				Asteroid a1 = asteroidMap.get(list.get(0));
-				Asteroid a2 = asteroidMap.get(list.get(list.size() - 1));
-				double dis = Math.abs(a1.orbit.a - a2.orbit.a);
-				double radius = a1.radius() + a2.radius();
-				if(dis < radius){
-					int index = i == cluster_number - 1 ? cluster_number - 2 : i + 1;
-					asteroidClusters.get(index).addAll(asteroidClusters.get(i));
-					asteroidClusters.put(i, null);
-				}
-			}*/
+			}
 		}
 		if(changed){
 			int newClusterNumber = -1;
@@ -366,7 +353,7 @@ public class Player implements pb.sim.Player {
 		double distance = Point.distance(p1, p2);
 		if(distance < (r1 + r2))
 			return true;
-		//debug("will not overlap");
+		
 		return false;
 	}
 
@@ -419,32 +406,19 @@ public class Player implements pb.sim.Player {
 		double half = 0;
 		long firstId = asteroids[asteroids.length - 1].id;
 		long secondId = asteroids[asteroids.length - 1].id;
-//		Asteroid middleAsteroid = asteroids[asteroids.length / 2];
-//		Point v = middleAsteroid.orbit.velocityAt(time - middleAsteroid.epoch);
-//		double vRandom = Math.sqrt(v.x * v.x + v.y * v.y) * 0.25;
-//		boolean alreadySkip = false;
-//		double abandonedMass = 0;
-//		int indexOfMedian = 0;
+	
 		for(int i = asteroids.length - 1; i >= 0; i--){
-			/*double a = asteroids[i].orbit.a;
-			if(!alreadySkip){
-				double vHomman = Math.sqrt(Orbit.GM / a) * (Math.sqrt(2 * a / (a + middleAsteroid.orbit.a) - 1));
-				if(vHomman > vRandom && (abandonedMass + asteroids[i].mass < half)){
-					System.out.println("abondan this ast: " + a);
-					continue;
-				}
-			}
-			*/
+			
 			if(half >= massThreshold){
-//				indexOfMedian = i;
+
 				break;
 			}
-//			alreadySkip = true;
+
 			half += asteroids[i].mass;
 			ret.add(asteroids[i].id);
 			secondId = asteroids[i].id;
 		}
-		//ret.remove(o)
+	
 		clusterThreshold = Math.abs(asteroidMap.get(firstId).orbit.a - asteroidMap.get(secondId).orbit.a) / ret.size();
 		return ret;	
 	}
@@ -452,8 +426,7 @@ public class Player implements pb.sim.Player {
 	private void tryToCollideOutside(Asteroid[] asteroids, double[] energy, double[] direction){	
 		List<Long> ids = new ArrayList<Long>();
 		Point origin = new Point(0, 0);
-		//        System.out.println("clusters: " + asteroidClusters);
-		//        System.out.println("cluster number: " + cluster_number);
+		
 		for(int i = 0; i < asteroidClusters.size() - 1; i++){
 			debug("i: " + i);
 			if(time_of_push.get(i) != null) {
@@ -461,8 +434,7 @@ public class Player implements pb.sim.Player {
 				continue;
 			}
 			ids = asteroidClusters.get(i);
-			//List<Long> list = asteroidClusters.get(cluster_number - 1);
-			//Asteroid a2 = asteroidMap.get(list.get(list.size() - 1));
+			
 			Collections.sort(ids, new Comparator<Long>() {
 				@Override
 				public int compare(Long l1, Long l2) {
@@ -478,27 +450,20 @@ public class Player implements pb.sim.Player {
 				System.out.println("continuing because size is zero");
 				continue;
 			}
-			//    		System.out.println("cluster id: " + i + " size: " + size);
+			
 			//loop within this cluster
 			
 			if(size == 1){
-				//TODO push it to the next cluster
-				//                System.out.println("There is only 1");
 				System.out.println("bug!!! there should not be any cluster which only have one ast");
 			}else{
-				//TODO
-				//                System.out.println("There are multiple too!");
+				
+				
 				Asteroid a2 = asteroidMap.get(ids.get(size - 1));
 				for(int j = 0; j < ids.size() - 1; j++){
 					Asteroid a1 = asteroidMap.get(ids.get(j));
-//                    Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
                     
-					Push push;
-					//if(time < time_limit / 2)
-						push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
-					//else {
-						//push = calculateFirstPushReverse(a1, a2, 356 * 40, energy, direction);
-					//}
+					Push push = calculateFirstPush(a1, a2, 356 * 40, energy, direction);
+					
 					if(push != null){
 						System.out.println("Real push");
 						// do this at the time of pushnot,  immdiately
@@ -507,18 +472,14 @@ public class Player implements pb.sim.Player {
 						System.out.println("collision time: " + push.time_of_collision);
 						time_of_push.put(i, push);
 					}
-					//push it to the near outside one
+					
 				}
 			}
 		}
 
 
 	}
-	/*private void increaseClusterNumber(){
-		for (int i = 0; i < array.length; i++) {
-			
-		}
-	}*/
+	
 	private void refreshIndexMap(Asteroid[] asteroids){
 		asteroidMap = new HashMap<Long, Asteroid>();
 		asteroidIndexMap = new HashMap<Long, Integer>();
@@ -797,8 +758,7 @@ public class Player implements pb.sim.Player {
            for (double k=0; k< 1; k=k+0.001) 
            {
            	v2 = v1 * (k * 0.45 + 0.05); //Can't change this
-               //System.out.println("  Speed: " + v1 + " +/- " + v2);
-               // apply push at -π/8 to π/8 of current angle            
+                        
                double d1 = Math.atan2(v.y, v.x);
                double d2 = d1 + (random.nextDouble() - 0.5) * Math.PI * 0.25;
                //System.out.println("  Angle: " + d1 + " -> " + d2);
@@ -938,7 +898,8 @@ public class Player implements pb.sim.Player {
 		Arrays.sort(asteroids, new Comparator<Asteroid>() {
 			@Override
 			public int compare(Asteroid o1, Asteroid o2) {
-				return (int)(o1.orbit.a - o2.orbit.a);
+				//return (int)(o1.orbit.a - o2.orbit.a);
+				return (int)(o1.mass - o2.mass);
 			}
 		});
 		System.out.println("Final TRy");
@@ -975,5 +936,4 @@ public class Player implements pb.sim.Player {
 			}
 		}
 	}
-
 }
