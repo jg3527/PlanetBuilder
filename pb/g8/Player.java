@@ -219,8 +219,7 @@ public class Player implements pb.sim.Player {
 		if(asteroidsForCircularPush.size() > 0) {
 			return;
 		}
-		double time_thresh = time_limit * 0.97 < 20 ? 20l : time_limit * 0.97;
-		time_thresh = 0.97*time_limit;
+		double time_thresh = time_limit * 0.97 < 9200 ? 9200l : time_limit * 0.97;
 		if(time >= time_thresh){
 			finalTry(asteroids, energy, direction);
 			return;
@@ -556,10 +555,17 @@ public class Player implements pb.sim.Player {
 			long time_of_collision = (new Double(timeH / (86400))).longValue() + time;
 //			if(timeH / 86400 > (time_limit - time) / 2)
 //				return null;
-			//long time_of_collision_2 = calCollisionTime(a1, a2, 0, t, p1, p2);
-			System.out.println("time of collison: " + time_of_collision);
-			System.out.println(timeH);
-			//System.out.println(time_of_collision_2);
+            System.out.println("time of collison: " + time_of_collision);
+            System.out.println(timeH);
+            Asteroid a_new = Asteroid.push(a1, time, E, theta1);
+            long time_of_collision_2 = calCollisionTime(a_new, a2, 0, time_limit - time, v1, v2);
+            System.out.println(time_of_collision_2);
+            if(time_of_collision_2 > 0) {
+                time_of_collision = time_of_collision_2;
+            }
+            if(time_of_collision == -1 || time_of_collision > time_limit) {
+                return null;
+            }
 			//            if(time_of_collision < t) {
 			int index = asteroidIndexMap.get(a1.id);
 			System.out.println("index:" + index);
@@ -612,9 +618,20 @@ public class Player implements pb.sim.Player {
             int index = asteroidIndexMap.get(a1.id);
             System.out.println("index:" + index);
             long time_push = time;
-            long time_of_collision = (new Double(timeTransfer)).longValue() + time;
-            energy[index] = 0.5*a1.mass * velocityNew * velocityNew;
-            direction[index] = anglePush;
+            long time_of_collision = (new Double(timeTransfer/(86400))).longValue() + time;
+            double E = 0.5*a1.mass * velocityNew * velocityNew;
+            double dir = anglePush;
+            Asteroid a_new = Asteroid.push(a1, time, E, dir);
+            long time_of_collision_2 = calCollisionTime(a_new, a2, 0, time_limit - time, velocityInner, velocityOuter);
+            System.out.println(time_of_collision_2);
+            if(time_of_collision_2 > 0) {
+                time_of_collision = time_of_collision_2;
+            }
+            if(time_of_collision != -1 && time_of_collision < time_limit) {
+                return null;
+            }
+            energy[index] = E;
+            direction[index] = dir;
             collisionPairs.add(new Tuple(a1.id, a2.id));
             return new Push(a1.id, energy[index], direction[index], time_push, time_of_collision);
             //store mass
@@ -658,7 +675,7 @@ public class Player implements pb.sim.Player {
             int index = asteroidIndexMap.get(a1.id);
             System.out.println("index:" + index);
             long time_push = time;
-            long time_of_collision = (new Double(timeTransfer)).longValue() + time;
+            long time_of_collision = (new Double(timeTransfer/(86400))).longValue() + time;
             energy[index] = 0.5*a1.mass * velocityNew * velocityNew;
             direction[index] = anglePush;
             collisionPairs.add(new Tuple(a1.id, a2.id));
@@ -944,7 +961,7 @@ public class Player implements pb.sim.Player {
 				System.out.println("final try forword");
 				push = calculateFirstPush(a1, mstAsteroid, 6000, energy, direction);
 			}else{
-				push = calculateFirstPushReverseTmp(mstAsteroid, a1, 6000, energy, direction);
+				push = calculateFirstPushReverse(mstAsteroid, a1, 6000, energy, direction);
 			}
 			if(push != null){
 				curMass += a1.mass;
